@@ -486,6 +486,11 @@
       document.documentElement.className = theme;
       localStorage.setItem('crm-theme', theme);
       refreshIcons();
+      // Sync theme to reports iframe
+      const iframe = document.getElementById('reports-iframe');
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ type: 'theme-change', theme: theme }, '*');
+      }
     }
     function toggleTheme() {
       const next = getTheme() === 'dark' ? 'light' : 'dark';
