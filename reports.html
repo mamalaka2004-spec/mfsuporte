@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manager Fashion — Relatório de Suporte</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.2/dist/html2pdf.bundle.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --card: #1a1d27;
+      --border: #2a2d3a;
+      --text: #e4e4e7;
+      --muted: #9ca3af;
+      --accent: #6366f1;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #eab308;
+      --orange: #f97316;
+      --blue: #3b82f6;
+      --purple: #a855f7;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .header {
+      padding: 24px 32px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header h1 { font-size: 22px; font-weight: 600; }
+    .header h1 span { color: var(--accent); }
+    .header-meta { color: var(--muted); font-size: 13px; }
+    .btn {
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); }
+    .btn-ai { background: var(--purple); }
+    .btn-pdf { background: var(--green); }
+
+    .container { max-width: 1400px; margin: 0 auto; padding: 24px 32px; }
+
+    /* KPI Cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .kpi-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+    }
+    .kpi-card .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .kpi-card .value { font-size: 32px; font-weight: 700; }
+    .kpi-card .sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .kpi-card.danger .value { color: var(--red); }
+    .kpi-card.success .value { color: var(--green); }
+    .kpi-card.warning .value { color: var(--yellow); }
+    .kpi-card.info .value { color: var(--blue); }
+
+    /* Kanban Section */
+    .kanban-section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    .kanban-section h3 { font-size: 14px; font-weight: 600; margin-bottom: 16px; }
+    .kanban-grid {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+    .kanban-col {
+      min-width: 140px;
+      flex-shrink: 0;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+    .kanban-col .stage-name {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-bottom: 8px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .kanban-col .stage-count {
+      font-size: 28px;
+      font-weight: 700;
+    }
+    .kanban-col.stage-open .stage-count { color: var(--yellow); }
+    .kanban-col.stage-closed .stage-count { color: var(--green); }
+    .kanban-col.stage-danger .stage-count { color: var(--red); }
+    .kanban-col.stage-neutral .stage-count { color: var(--blue); }
+
+    /* Chart Grid */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .chart-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+    }
+    .chart-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 16px; }
+    .chart-container { position: relative; height: 260px; }
+
+    /* AI Section */
+    .ai-section {
+      background: linear-gradient(135deg, #1e1b4b 0%, #1a1d27 100%);
+      border: 1px solid #312e81;
+      border-radius: 10px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .ai-section h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .ai-section h3::before { content: '🤖'; }
+    .ai-resumo { font-size: 14px; line-height: 1.7; margin-bottom: 16px; color: #c7d2fe; }
+    .ai-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .ai-block { background: rgba(99,102,241,0.08); border-radius: 8px; padding: 16px; }
+    .ai-block h4 { font-size: 13px; font-weight: 600; margin-bottom: 10px; color: var(--accent); }
+    .ai-block ul { list-style: none; padding: 0; }
+    .ai-block li { font-size: 13px; line-height: 1.6; color: var(--muted); padding: 2px 0; }
+    .ai-block li::before { content: '•'; color: var(--accent); margin-right: 8px; }
+    .ai-placeholder {
+      background: linear-gradient(135deg, #1e1b4b 0%, #1a1d27 100%);
+      border: 1px dashed #312e81;
+      border-radius: 10px;
+      padding: 24px;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+    .ai-placeholder p { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+
+    /* Table */
+    .table-section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    .table-section h3 { font-size: 14px; font-weight: 600; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      text-align: left;
+      padding: 10px 12px;
+      color: var(--muted);
+      font-weight: 500;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    tbody td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr:hover { background: rgba(99,102,241,0.04); }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .badge-urgente { background: rgba(239,68,68,0.15); color: var(--red); }
+    .badge-alta { background: rgba(249,115,22,0.15); color: var(--orange); }
+    .badge-media { background: rgba(234,179,8,0.15); color: var(--yellow); }
+    .badge-baixa { background: rgba(34,197,94,0.15); color: var(--green); }
+    .badge-tier2 { background: rgba(59,130,246,0.15); color: var(--blue); }
+    .badge-tier3 { background: rgba(168,85,247,0.15); color: var(--purple); }
+    .badge-overdue { background: rgba(239,68,68,0.15); color: var(--red); }
+
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      gap: 16px;
+    }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-msg { color: var(--red); text-align: center; padding: 40px; }
+
+    @media (max-width: 768px) {
+      .charts-grid, .ai-grid { grid-template-columns: 1fr; }
+      .container { padding: 16px; }
+      .header { padding: 16px; flex-direction: column; gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1><span>Manager Fashion</span> — Relatório de Suporte</h1>
+      <div class="header-meta" id="generated-at">Carregando...</div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-primary" onclick="loadData(false)" id="refresh-btn">Atualizar Dados</button>
+      <button class="btn btn-ai" onclick="loadData(true)" id="ai-btn">Gerar Análise IA</button>
+      <button class="btn btn-pdf" onclick="exportPDF()" id="pdf-btn">Exportar PDF</button>
+    </div>
+  </div>
+
+  <div class="container" id="content">
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <div style="color: var(--muted); font-size: 14px;">Consultando Notion...</div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'https://n8n.mfmanagerfashion.net/webhook/relatorios';
+    let cachedAiAnalysis = null;
+    let lastDataHash = null;
+
+    async function loadData(withAI = false) {
+      const refreshBtn = document.getElementById('refresh-btn');
+      const aiBtn = document.getElementById('ai-btn');
+      const content = document.getElementById('content');
+
+      if (withAI) {
+        aiBtn.disabled = true;
+        aiBtn.textContent = 'Gerando análise...';
+      } else {
+        refreshBtn.disabled = true;
+        refreshBtn.textContent = 'Carregando...';
+      }
+
+      const loadingMsg = withAI ? 'Consultando Notion e gerando análise IA...' : 'Atualizando dados do Notion...';
+      content.innerHTML = `<div class="loading"><div class="spinner"></div><div style="color: var(--muted); font-size: 14px;">${loadingMsg}</div></div>`;
+
+      try {
+        const url = withAI ? `${API_URL}?ai=true` : API_URL;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.message && data.message.includes('Error')) {
+          throw new Error(data.message);
+        }
+
+        // Cache AI analysis
+        if (data.aiAnalysis) {
+          cachedAiAnalysis = data.aiAnalysis;
+          lastDataHash = data.dataHash;
+        } else if (cachedAiAnalysis && data.dataHash === lastDataHash) {
+          // Reuse cached AI if data hasn't changed
+          data.aiAnalysis = cachedAiAnalysis;
+        } else if (cachedAiAnalysis && data.dataHash !== lastDataHash) {
+          // Data changed, mark AI as stale
+          data.aiAnalysis = cachedAiAnalysis;
+          data.aiStale = true;
+        }
+
+        renderDashboard(data);
+      } catch (err) {
+        content.innerHTML = `<div class="error-msg"><h3>Erro ao carregar dados</h3><p>${err.message}</p><p style="margin-top:8px;color:var(--muted)">Verifique se o workflow está ativo no n8n.</p></div>`;
+      } finally {
+        refreshBtn.disabled = false;
+        refreshBtn.textContent = 'Atualizar Dados';
+        aiBtn.disabled = false;
+        aiBtn.textContent = 'Gerar Análise IA';
+      }
+    }
+
+    function getStageStyle(name) {
+      const closed = ['Resolvido', 'Cancelado'];
+      const danger = ['Emergência', 'Atrasado'];
+      const open = ['Pendente', 'Pendente (re-aberto)', 'Em análise', 'Análise pausada', 'Aguardando retorno cliente', 'Suporte remoto à fazer', 'Monitorando'];
+      if (closed.includes(name)) return 'stage-closed';
+      if (danger.includes(name)) return 'stage-danger';
+      if (open.includes(name)) return 'stage-open';
+      return 'stage-neutral';
+    }
+
+    function renderDashboard(data) {
+      const content = document.getElementById('content');
+      const k = data.kpis;
+      const ai = data.aiAnalysis;
+
+      document.getElementById('generated-at').textContent =
+        `Gerado em: ${new Date(data.generatedAt).toLocaleString('pt-BR')}`;
+
+      let html = '';
+
+      // KPI Cards
+      html += `<div class="kpi-grid">
+        <div class="kpi-card info"><div class="label">Total Tickets</div><div class="value">${k.total}</div></div>
+        <div class="kpi-card success"><div class="label">Fechados</div><div class="value">${k.closed}</div><div class="sub">${Math.round(k.closed/k.total*100)}% do total</div></div>
+        <div class="kpi-card warning"><div class="label">Abertos</div><div class="value">${k.open}</div></div>
+        <div class="kpi-card danger"><div class="label">Atrasados</div><div class="value">${k.overdue}</div><div class="sub">${k.open > 0 ? Math.round(k.overdue/k.open*100) : 0}% dos abertos</div></div>
+        <div class="kpi-card"><div class="label">Tempo Médio Resolução</div><div class="value">${k.avgResolutionHours || 'N/A'}<span style="font-size:16px;font-weight:400">h</span></div><div class="sub">${k.resolvedCount} tickets com dados</div></div>
+        <div class="kpi-card${k.semDataRecebimento > 0 ? ' danger' : ''}"><div class="label">Sem Data Recebimento</div><div class="value">${k.semDataRecebimento}</div><div class="sub">de ${k.total} tickets</div></div>
+      </div>`;
+
+      // Kanban Stages (dynamic)
+      const kanban = data.byKanban || {};
+      const kanbanEntries = Object.entries(kanban).sort((a, b) => b[1].total - a[1].total);
+      if (kanbanEntries.length > 0) {
+        html += `<div class="kanban-section">
+          <h3>Etapas do Kanban — Status dos Tickets</h3>
+          <div class="kanban-grid">`;
+        for (const [stage, info] of kanbanEntries) {
+          const style = getStageStyle(stage);
+          html += `<div class="kanban-col ${style}">
+            <div class="stage-name" title="${stage}">${stage}</div>
+            <div class="stage-count">${info.total}</div>
+          </div>`;
+        }
+        html += `</div></div>`;
+      }
+
+      // Charts
+      html += `<div class="charts-grid">
+        <div class="chart-card"><h3>Tickets por Tier</h3><div class="chart-container"><canvas id="chart-tier"></canvas></div></div>
+        <div class="chart-card"><h3>Tickets por Prioridade</h3><div class="chart-container"><canvas id="chart-priority"></canvas></div></div>
+        <div class="chart-card"><h3>Top 10 Seções</h3><div class="chart-container"><canvas id="chart-sections"></canvas></div></div>
+        <div class="chart-card"><h3>Carga por Responsável</h3><div class="chart-container"><canvas id="chart-responsible"></canvas></div></div>
+      </div>`;
+
+      // AI Section
+      if (ai && ai.resumo) {
+        const staleWarning = data.aiStale ? '<div style="background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.3);border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#eab308;">Os dados mudaram desde a última análise. Clique em "Gerar Análise IA" para atualizar.</div>' : '';
+        html += `<div class="ai-section">
+          <h3>Análise do Especialista IA</h3>
+          ${staleWarning}
+          <div class="ai-resumo">${ai.resumo}</div>
+          <div style="margin-bottom:12px;font-size:13px;color:#c7d2fe;"><strong>Distribuição de Carga:</strong> ${ai.distribuicaoCarga || ''}</div>
+          <div class="ai-grid">
+            <div class="ai-block"><h4>Pontos Críticos</h4><ul>${(ai.pontosCriticos||[]).map(p => `<li>${p}</li>`).join('')}</ul></div>
+            <div class="ai-block"><h4>Seções Problemáticas</h4><ul>${(ai.secoesProblematicas||[]).map(s => `<li>${s}</li>`).join('')}</ul></div>
+            <div class="ai-block"><h4>Clientes que Demandam Atenção</h4><ul>${(ai.clientesAtencao||[]).map(c => `<li>${c}</li>`).join('')}</ul></div>
+            <div class="ai-block"><h4>Recomendações</h4><ul>${(ai.recomendacoes||[]).map(r => `<li>${r}</li>`).join('')}</ul></div>
+          </div>
+        </div>`;
+      } else {
+        html += `<div class="ai-placeholder">
+          <p>Análise IA ainda não gerada nesta sessão.</p>
+          <button class="btn btn-ai" onclick="loadData(true)">Gerar Análise IA</button>
+        </div>`;
+      }
+
+      // Open tickets table
+      const tickets = data.openTickets || [];
+      if (tickets.length > 0) {
+        html += `<div class="table-section">
+          <h3>Tickets Abertos (${tickets.length})</h3>
+          <table>
+            <thead><tr><th>Ticket</th><th>Tier</th><th>Prioridade</th><th>Status</th><th>Cliente</th><th>Responsável</th><th>Prazo</th></tr></thead>
+            <tbody>`;
+        for (const t of tickets) {
+          const priBadge = t.priority === 'Urgente' ? 'badge-urgente' : t.priority === 'Alta' ? 'badge-alta' : t.priority === 'Média' ? 'badge-media' : 'badge-baixa';
+          const tierBadge = t.tier === 'Tier 3' ? 'badge-tier3' : 'badge-tier2';
+          const deadline = t.deadlineDate ? new Date(t.deadlineDate).toLocaleDateString('pt-BR') : '-';
+          const overdueTag = t.isOverdue ? ' <span class="badge badge-overdue">ATRASADO</span>' : '';
+          html += `<tr>
+            <td>${t.title.substring(0, 60)}${t.title.length > 60 ? '...' : ''}</td>
+            <td><span class="badge ${tierBadge}">${t.tier}</span></td>
+            <td><span class="badge ${priBadge}">${t.priority}</span></td>
+            <td>${(t.statuses||[]).join(', ')}</td>
+            <td>${(t.clients||[]).join(', ')}</td>
+            <td>${(t.responsaveis||[]).join(', ')}</td>
+            <td>${deadline}${overdueTag}</td>
+          </tr>`;
+        }
+        html += `</tbody></table></div>`;
+      }
+
+      content.innerHTML = html;
+      renderCharts(data);
+    }
+
+    function renderCharts(data) {
+      Chart.defaults.color = '#9ca3af';
+      Chart.defaults.borderColor = '#2a2d3a';
+
+      const tierLabels = Object.keys(data.byTier);
+      new Chart(document.getElementById('chart-tier'), {
+        type: 'bar',
+        data: {
+          labels: tierLabels,
+          datasets: [
+            { label: 'Fechados', data: tierLabels.map(t => data.byTier[t].closed), backgroundColor: '#22c55e' },
+            { label: 'Abertos', data: tierLabels.map(t => data.byTier[t].open), backgroundColor: '#eab308' }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } }
+      });
+
+      const priLabels = Object.keys(data.byPriority);
+      const priColors = { 'Urgente': '#ef4444', 'Alta': '#f97316', 'Média': '#eab308', 'Baixa': '#22c55e' };
+      new Chart(document.getElementById('chart-priority'), {
+        type: 'doughnut',
+        data: {
+          labels: priLabels,
+          datasets: [{
+            data: priLabels.map(p => data.byPriority[p].total),
+            backgroundColor: priLabels.map(p => priColors[p] || '#6366f1')
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+      });
+
+      const secLabels = Object.keys(data.topSections);
+      new Chart(document.getElementById('chart-sections'), {
+        type: 'bar',
+        data: {
+          labels: secLabels,
+          datasets: [{ label: 'Tickets', data: secLabels.map(s => data.topSections[s]), backgroundColor: '#6366f1' }]
+        },
+        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
+      });
+
+      const respLabels = Object.keys(data.byResponsible).sort((a, b) => data.byResponsible[b].total - data.byResponsible[a].total).slice(0, 10);
+      new Chart(document.getElementById('chart-responsible'), {
+        type: 'bar',
+        data: {
+          labels: respLabels,
+          datasets: [
+            { label: 'Fechados', data: respLabels.map(r => data.byResponsible[r].total - data.byResponsible[r].open), backgroundColor: '#22c55e' },
+            { label: 'Abertos', data: respLabels.map(r => data.byResponsible[r].open), backgroundColor: '#eab308' }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } }
+      });
+    }
+
+    function exportPDF() {
+      const btn = document.getElementById('pdf-btn');
+      btn.disabled = true;
+      btn.textContent = 'Gerando PDF...';
+
+      const now = new Date();
+      const dateStr = now.toISOString().slice(0, 10);
+
+      const opt = {
+        margin: [12, 16, 12, 16],
+        filename: `Relatorio-Suporte-MF-${dateStr}.pdf`,
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#0f1117', scrollX: 0, scrollY: 0, windowWidth: document.body.scrollWidth },
+        jsPDF: { unit: 'mm', format: 'a3', orientation: 'landscape' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      };
+
+      html2pdf().set(opt).from(document.body).save().then(() => {
+        btn.disabled = false;
+        btn.textContent = 'Exportar PDF';
+      }).catch(() => {
+        btn.disabled = false;
+        btn.textContent = 'Exportar PDF';
+      });
+    }
+
+    // Load on page load (KPIs only, no AI tokens)
+    loadData(false);
+  </script>
+</body>
+</html>
