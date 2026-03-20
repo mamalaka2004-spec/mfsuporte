@@ -83,6 +83,7 @@
       --text-primary: #f4f4f5;
       --text-secondary: #a1a1aa;
       --text-muted: #71717a;
+      --accent-text: #818cf8;
       --glass: rgba(255,255,255,0.03);
       --glass-hover: rgba(255,255,255,0.06);
       --shadow-card: 0 1px 3px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.25);
@@ -102,6 +103,7 @@
       --text-primary: #0f172a;
       --text-secondary: #475569;
       --text-muted: #94a3b8;
+      --accent-text: #4f46e5;
       --glass: rgba(99,102,241,0.03);
       --glass-hover: rgba(99,102,241,0.06);
       --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04);
@@ -334,7 +336,7 @@
 
   <!-- ═══════ REPORTS VIEW ═══════ -->
   <div class="view hidden" id="view-reports">
-    <iframe class="reports-frame" src="index.html" id="reports-iframe"></iframe>
+    <iframe class="reports-frame" src="reports.html" id="reports-iframe"></iframe>
   </div>
 
   <!-- ═══════ DETAIL PANEL ═══════ -->
@@ -569,7 +571,7 @@
     }
 
     function getTierBadge(tier) {
-      return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">${tier || '-'}</span>`;
+      return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-semibold bg-indigo-500/10 text-[var(--accent-text)] border border-indigo-500/20">${tier || '-'}</span>`;
     }
 
     function getTagBadge(tag) {
@@ -1229,7 +1231,7 @@
         col.innerHTML = `
           <div class="flex justify-between items-center px-4 pt-4 pb-3 border-b border-[var(--border-color)]">
             <span class="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">${stage}</span>
-            <span class="bg-indigo-500/10 text-indigo-400 text-[11px] font-bold px-2.5 py-0.5 rounded-full min-w-[24px] text-center">${colTickets.length}</span>
+            <span class="bg-indigo-500/10 text-[var(--accent-text)] text-[11px] font-bold px-2.5 py-0.5 rounded-full min-w-[24px] text-center">${colTickets.length}</span>
           </div>`;
 
         const cardsEl = document.createElement('div');
