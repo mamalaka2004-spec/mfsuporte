@@ -336,7 +336,7 @@
 
   <!-- ═══════ REPORTS VIEW ═══════ -->
   <div class="view hidden" id="view-reports">
-    <iframe class="reports-frame" src="reports.html" id="reports-iframe"></iframe>
+    <iframe class="reports-frame" id="reports-iframe"></iframe>
   </div>
 
   <!-- ═══════ DETAIL PANEL ═══════ -->
@@ -1621,6 +1621,18 @@
       const target = document.getElementById(`view-${view}`);
       target.classList.add('active');
       target.classList.remove('hidden');
+
+      // Lazy-load reports iframe on first visit
+      if (view === 'reports') {
+        const iframe = document.getElementById('reports-iframe');
+        if (!iframe.src || !iframe.src.includes('reports.html')) {
+          iframe.src = 'reports.html';
+          // Send theme to iframe once loaded
+          iframe.onload = function() {
+            iframe.contentWindow.postMessage({ type: 'theme-change', theme: getTheme() }, '*');
+          };
+        }
+      }
     }
 
     function refreshIcons() { if (typeof lucide !== 'undefined') lucide.createIcons(); }
