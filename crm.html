@@ -1662,9 +1662,10 @@
       target.classList.add('active');
       target.classList.remove('hidden');
 
-      // Lazy-load conversations on first visit
+      // Load conversations and clear badge
       if (view === 'conversations') {
         loadConversationList();
+        hideConvBadge();
       }
 
       // Lazy-load reports iframe on first visit
@@ -1691,7 +1692,9 @@
     let chatPollTimer = null;
     let lastConvTimestamp = null;
     let lastChatMsgCount = 0;
+    let lastConvTotalCount = 0;
     let convFirstLoad = true;
+    let convNewMsgCount = 0;
 
     async function supabaseGet(query) {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/${query}`, {
@@ -1715,24 +1718,28 @@
       try {
         const msgs = await supabaseGet('conversations?select=phone,sender_name,message_text,direction,created_at&order=created_at.desc&limit=500');
         const newTimestamp = msgs.length ? msgs[0].created_at : null;
+        const totalInbound = msgs.filter(m => m.direction === 'inbound').length;
 
         if (newTimestamp && newTimestamp !== lastConvTimestamp) {
+          const hadPrevData = lastConvTimestamp !== null;
           lastConvTimestamp = newTimestamp;
           const grouped = groupConversations(msgs);
-          const oldPhones = new Set(allConversations.map(c => c.phone));
           allConversations = grouped;
-
-          // Check for new conversations or new messages
-          const hasNew = grouped.some(c => !oldPhones.has(c.phone)) || (newTimestamp !== lastConvTimestamp);
           renderConversationList(getFilteredConvs());
           updateConvCount();
 
-          // Show new message badge on tab if not viewing conversations
-          const activeView = document.querySelector('.nav-tab.active')?.dataset?.view;
-          if (activeView !== 'conversations') {
-            const badge = document.getElementById('conv-new-badge');
-            if (badge) badge.classList.remove('hidden');
+          // Detect genuinely new inbound messages
+          if (hadPrevData && totalInbound > lastConvTotalCount) {
+            const newCount = totalInbound - lastConvTotalCount;
+            const activeView = document.querySelector('.nav-tab.active')?.dataset?.view;
+
+            if (activeView !== 'conversations') {
+              // User is on another tab — show badge with count
+              convNewMsgCount += newCount;
+              showConvBadge(convNewMsgCount);
+            }
           }
+          lastConvTotalCount = totalInbound;
         }
 
         // Also refresh active chat
@@ -1740,6 +1747,23 @@
           pollActiveChat();
         }
       } catch (e) { /* silent fail on poll */ }
+    }
+
+    function showConvBadge(count) {
+      const badge = document.getElementById('conv-new-badge');
+      if (!badge) return;
+      badge.classList.remove('hidden');
+      badge.textContent = count > 9 ? '9+' : count;
+      badge.className = 'ml-1.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-green-500 text-white text-[10px] font-bold animate-pulse leading-none px-1';
+    }
+
+    function hideConvBadge() {
+      const badge = document.getElementById('conv-new-badge');
+      if (!badge) return;
+      badge.classList.add('hidden');
+      badge.textContent = '';
+      badge.className = 'hidden ml-1 w-2 h-2 rounded-full bg-green-500 animate-pulse';
+      convNewMsgCount = 0;
     }
 
     async function pollActiveChat() {
@@ -1793,14 +1817,14 @@
       try {
         const msgs = await supabaseGet('conversations?select=phone,sender_name,message_text,direction,created_at&order=created_at.desc&limit=500');
         lastConvTimestamp = msgs.length ? msgs[0].created_at : null;
+        lastConvTotalCount = msgs.filter(m => m.direction === 'inbound').length;
         allConversations = groupConversations(msgs);
         renderConversationList(allConversations);
         updateConvCount();
         convFirstLoad = false;
 
-        // Hide new badge
-        const badge = document.getElementById('conv-new-badge');
-        if (badge) badge.classList.add('hidden');
+        // Clear badge — user is viewing conversations
+        hideConvBadge();
 
         // Start polling
         startConvPolling();
@@ -1874,7 +1898,7 @@
             <div class="text-[14px] font-semibold text-[var(--text-primary)]">${escapeHtml(displayName)}</div>
             <div class="flex items-center gap-2">
               <span class="text-[11px] text-[var(--text-muted)] font-mono">${formatPhoneDisplay(phone)}</span>
-              <span class="inline-flex items-center gap-0.5 text-[9px] text-green-400"><span class="w-1.5 h-1.5 rounded-full bg-green-500 inline-block"></span> ao vivo</span>
+              <span class="inline-flex items-center gap-0.5 text-[9px] text-green-400"><span class="w-1.5 h-1.5 rounded-full bg-green-500 inline-block animate-pulse"></span> online</span>
             </div>
           </div>
         </div>
@@ -1996,6 +2020,20 @@
         await loadTickets();
         renderKanban(); renderList(); updateTabCounts(); refreshIcons();
       }, 300000);
+
+      // Start conversation polling globally (detects new msgs even on other tabs)
+      initConvPolling();
+    }
+
+    async function initConvPolling() {
+      try {
+        const msgs = await supabaseGet('conversations?select=phone,sender_name,message_text,direction,created_at&order=created_at.desc&limit=500');
+        lastConvTimestamp = msgs.length ? msgs[0].created_at : null;
+        lastConvTotalCount = msgs.filter(m => m.direction === 'inbound').length;
+        allConversations = groupConversations(msgs);
+        updateConvCount();
+      } catch (e) { /* silent */ }
+      startConvPolling();
     }
 
     init();
