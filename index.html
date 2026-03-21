@@ -343,11 +343,16 @@
       <!-- Sidebar: conversation list -->
       <div class="w-[340px] flex-shrink-0 border-r border-[var(--border-color)] flex flex-col bg-[var(--surface)]">
         <div class="p-3 border-b border-[var(--border-color)]">
-          <div class="relative">
-            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] opacity-50"></i>
-            <input type="text" id="conv-search" placeholder="Buscar por nome ou telefone..."
-              oninput="filterConversationList()"
-              class="w-full bg-[var(--surface-2)] border border-[var(--border-color)] text-[var(--text-secondary)] pl-9 pr-3 py-2.5 rounded-lg text-[13px] transition-all duration-150 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20">
+          <div class="flex items-center gap-2">
+            <div class="relative flex-1">
+              <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] opacity-50"></i>
+              <input type="text" id="conv-search" placeholder="Buscar por nome ou telefone..." aria-label="Buscar conversas"
+                oninput="filterConversationList()"
+                class="w-full bg-[var(--surface-2)] border border-[var(--border-color)] text-[var(--text-secondary)] pl-9 pr-3 py-2.5 rounded-xl text-[13px] transition-all duration-150 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20">
+            </div>
+            <button onclick="loadConversationList()" class="w-9 h-9 rounded-xl bg-[var(--glass)] border border-[var(--border-color)] text-[var(--text-muted)] flex items-center justify-center cursor-pointer hover:text-[var(--text-primary)] hover:bg-[var(--glass-hover)] transition-all duration-150 flex-shrink-0" title="Atualizar lista" aria-label="Atualizar lista">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            </button>
           </div>
         </div>
         <div id="conv-list" class="flex-1 overflow-y-auto">
@@ -359,30 +364,43 @@
       </div>
       <!-- Chat area -->
       <div class="flex-1 flex flex-col bg-[var(--surface)]">
-        <div id="conv-chat-header" class="flex-shrink-0 px-5 py-3 border-b border-[var(--border-color)] bg-[var(--surface-2)]/60 backdrop-blur-sm min-h-[56px] flex items-center">
+        <div id="conv-chat-header" class="flex-shrink-0 px-5 py-3 border-b border-[var(--border-color)] bg-[var(--surface-2)]/60 backdrop-blur-sm min-h-[60px] flex items-center">
           <div class="text-[13px] text-[var(--text-muted)]">Selecione uma conversa</div>
         </div>
-        <div id="conv-chat-messages" class="flex-1 overflow-y-auto p-5 space-y-2" style="background: var(--surface); background-image: radial-gradient(circle at 1px 1px, var(--border-color) 0.5px, transparent 0); background-size: 24px 24px;">
+        <!-- Pause banner -->
+        <div id="conv-pause-banner" class="hidden flex-shrink-0 px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 flex items-center gap-2">
+          <i data-lucide="pause-circle" class="w-4 h-4 text-amber-400 flex-shrink-0"></i>
+          <span class="text-[12px] text-amber-300 flex-1">IA pausada — o atendente assumiu esta conversa</span>
+          <span id="conv-pause-timer" class="text-[11px] text-amber-400/70 font-mono tabular-nums"></span>
+        </div>
+        <div id="conv-chat-messages" class="flex-1 overflow-y-auto px-5 py-4" style="background: var(--surface); background-image: radial-gradient(circle at 1px 1px, var(--border-color) 0.5px, transparent 0); background-size: 24px 24px;">
           <div class="flex flex-col items-center justify-center h-full text-center">
-            <i data-lucide="message-square" class="w-12 h-12 text-[var(--text-muted)] opacity-20 mb-3"></i>
+            <div class="w-16 h-16 rounded-2xl bg-[var(--surface-2)] border border-[var(--border-color)] flex items-center justify-center mb-4">
+              <i data-lucide="message-square" class="w-7 h-7 text-[var(--text-muted)] opacity-30"></i>
+            </div>
             <div class="text-[14px] text-[var(--text-muted)] font-medium">Nenhuma conversa selecionada</div>
-            <div class="text-[12px] text-[var(--text-muted)] opacity-60 mt-1">Selecione uma conversa à esquerda para visualizar as mensagens</div>
+            <div class="text-[12px] text-[var(--text-muted)] opacity-50 mt-1.5 max-w-[260px] leading-relaxed">Selecione uma conversa à esquerda para visualizar as mensagens</div>
           </div>
         </div>
         <!-- Reply composer -->
-        <div id="conv-reply-bar" class="hidden flex-shrink-0 border-t border-[var(--border-color)] bg-[var(--surface-2)]/80 backdrop-blur-sm px-4 py-3">
-          <div class="flex items-end gap-2.5 w-full">
+        <div id="conv-reply-bar" class="hidden flex-shrink-0 border-t border-[var(--border-color)] bg-[var(--surface-2)]/80 backdrop-blur-sm">
+          <div id="conv-send-status" class="hidden text-[11px] px-4 py-1.5 border-b border-[var(--border-color)]/50"></div>
+          <div class="flex items-end gap-2 px-4 py-3">
             <div class="flex-1 relative">
-              <textarea id="conv-reply-input" rows="1" placeholder="Digite uma mensagem..."
-                class="w-full bg-[var(--surface)] border border-[var(--border-color)] text-[var(--text-primary)] px-4 py-2.5 pr-10 rounded-xl text-[13px] resize-none transition-all duration-150 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 max-h-[120px] leading-relaxed"
+              <textarea id="conv-reply-input" rows="1" placeholder="Digite uma mensagem..." aria-label="Mensagem"
+                class="w-full bg-[var(--surface)] border border-[var(--border-color)] text-[var(--text-primary)] text-[13px] px-4 py-2.5 rounded-2xl resize-none transition-all duration-150 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 max-h-[120px] leading-relaxed placeholder:text-[var(--text-muted)]/60"
                 onkeydown="handleReplyKeydown(event)" oninput="autoResizeReplyInput(this)"></textarea>
             </div>
-            <button id="conv-send-btn" onclick="sendReplyMessage()" disabled
-              class="w-10 h-10 rounded-xl bg-indigo-500 text-white flex items-center justify-center cursor-pointer transition-all duration-150 hover:bg-indigo-600 hover:shadow-lg hover:shadow-indigo-500/25 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-indigo-500 disabled:hover:shadow-none flex-shrink-0">
+            <button id="conv-send-btn" onclick="sendReplyMessage()" disabled aria-label="Enviar mensagem"
+              class="w-10 h-10 rounded-2xl bg-indigo-500 text-white flex items-center justify-center cursor-pointer transition-all duration-200 hover:bg-indigo-600 hover:shadow-lg hover:shadow-indigo-500/25 hover:scale-105 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-indigo-500 disabled:hover:shadow-none disabled:hover:scale-100 flex-shrink-0 mb-px">
               <i data-lucide="send" class="w-4 h-4"></i>
             </button>
           </div>
-          <div id="conv-send-status" class="hidden text-[11px] mt-1.5 ml-1"></div>
+          <div class="px-4 pb-2 flex items-center gap-3">
+            <span class="text-[10px] text-[var(--text-muted)]/50">Enter enviar · Shift+Enter nova linha</span>
+            <span class="text-[10px] text-[var(--text-muted)]/30">·</span>
+            <span id="conv-char-count" class="text-[10px] text-[var(--text-muted)]/40 tabular-nums"></span>
+          </div>
         </div>
       </div>
     </div>
@@ -1855,30 +1873,44 @@
     function renderConversationList(convs) {
       const listEl = document.getElementById('conv-list');
       if (!convs.length) {
-        listEl.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center px-6"><i data-lucide="message-circle" class="w-10 h-10 text-[var(--text-muted)] opacity-20 mb-3"></i><div class="text-[13px] text-[var(--text-muted)]">Nenhuma conversa ainda</div><div class="text-[11px] text-[var(--text-muted)] opacity-50 mt-1">As conversas aparecerão quando clientes enviarem mensagens pelo WhatsApp</div></div>`;
+        listEl.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center px-6">
+          <div class="w-14 h-14 rounded-2xl bg-[var(--surface-2)] border border-[var(--border-color)] flex items-center justify-center mb-3">
+            <i data-lucide="message-circle" class="w-6 h-6 text-[var(--text-muted)] opacity-30"></i>
+          </div>
+          <div class="text-[13px] text-[var(--text-muted)] font-medium">Nenhuma conversa ainda</div>
+          <div class="text-[11px] text-[var(--text-muted)] opacity-50 mt-1 leading-relaxed max-w-[220px]">As conversas aparecerão quando clientes enviarem mensagens pelo WhatsApp</div>
+        </div>`;
         refreshIcons();
         return;
       }
-      listEl.innerHTML = convs.map(c => {
+      const avatarColors = [
+        'from-indigo-500 to-purple-600',
+        'from-emerald-500 to-teal-600',
+        'from-rose-500 to-pink-600',
+        'from-amber-500 to-orange-600',
+        'from-cyan-500 to-blue-600',
+        'from-violet-500 to-fuchsia-600'
+      ];
+      listEl.innerHTML = convs.map((c, idx) => {
         const initials = (c.name || '?').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
         const timeAgo = formatRelativeTime(c.lastAt);
         const isActive = c.phone === selectedConvPhone;
-        const preview = (c.lastMsg || '').substring(0, 55) + ((c.lastMsg || '').length > 55 ? '...' : '');
-        const dirIcon = c.direction === 'outbound' ? '<span class="text-indigo-400 mr-0.5">&#8618;</span>' : '';
-        return `<div class="conv-item flex items-start gap-3 px-4 py-3 cursor-pointer border-b border-[var(--border-color)]/50 transition-all duration-150 hover:bg-[var(--glass)] ${isActive ? 'bg-indigo-500/10 border-l-2 border-l-indigo-500' : 'border-l-2 border-l-transparent'}" onclick="openConversation('${c.phone}')">
-          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-[12px] font-semibold flex-shrink-0 relative">
+        const preview = (c.lastMsg || '').substring(0, 50) + ((c.lastMsg || '').length > 50 ? '...' : '');
+        const dirIcon = c.direction === 'outbound' ? '<i data-lucide="corner-up-right" class="w-3 h-3 inline-block text-indigo-400 mr-0.5 -mt-px"></i>' : '';
+        const colorIdx = c.phone.split('').reduce((a, b) => a + b.charCodeAt(0), 0) % avatarColors.length;
+        const isLastInbound = c.direction === 'inbound';
+        return `<div class="conv-item flex items-center gap-3 px-4 py-3.5 cursor-pointer border-b border-[var(--border-color)]/40 transition-all duration-150 hover:bg-[var(--glass)] ${isActive ? 'bg-indigo-500/8 border-l-[3px] border-l-indigo-500' : 'border-l-[3px] border-l-transparent'}" onclick="openConversation('${c.phone}')" role="button" tabindex="0" aria-label="Conversa com ${escapeHtml(c.name || c.phone)}">
+          <div class="w-11 h-11 rounded-full bg-gradient-to-br ${avatarColors[colorIdx]} flex items-center justify-center text-white text-[12px] font-bold flex-shrink-0 shadow-sm">
             ${initials}
-            <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-[var(--surface)]"></span>
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center justify-between gap-2">
               <div class="text-[13px] font-semibold text-[var(--text-primary)] truncate">${escapeHtml(c.name || c.phone)}</div>
-              <div class="text-[10px] text-[var(--text-muted)] whitespace-nowrap flex-shrink-0">${timeAgo}</div>
+              <div class="text-[10px] ${isLastInbound ? 'text-emerald-400 font-medium' : 'text-[var(--text-muted)]'} whitespace-nowrap flex-shrink-0">${timeAgo}</div>
             </div>
             <div class="text-[12px] text-[var(--text-muted)] truncate mt-0.5 leading-relaxed">${dirIcon}${escapeHtml(preview)}</div>
-            <div class="text-[10px] text-[var(--text-muted)] opacity-50 mt-0.5 font-mono">${formatPhoneDisplay(c.phone)}</div>
           </div>
-          <div class="flex-shrink-0 mt-1"><span class="text-[10px] bg-indigo-500/15 text-indigo-400 px-1.5 py-0.5 rounded-full font-medium">${c.count}</span></div>
+          ${isLastInbound ? `<div class="flex-shrink-0"><span class="w-2 h-2 rounded-full bg-emerald-500 block"></span></div>` : ''}
         </div>`;
       }).join('');
       refreshIcons();
@@ -1901,26 +1933,27 @@
       const conv = allConversations.find(c => c.phone === phone);
       const displayName = conv ? conv.name : phone;
       const initials = (displayName || '?').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+      const avatarColors = ['from-indigo-500 to-purple-600','from-emerald-500 to-teal-600','from-rose-500 to-pink-600','from-amber-500 to-orange-600','from-cyan-500 to-blue-600','from-violet-500 to-fuchsia-600'];
+      const colorIdx = phone.split('').reduce((a, b) => a + b.charCodeAt(0), 0) % avatarColors.length;
       headerEl.innerHTML = `
-        <div class="flex items-center gap-3 flex-1">
-          <div class="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-[11px] font-semibold relative">
+        <div class="flex items-center gap-3 flex-1 min-w-0">
+          <div class="w-10 h-10 rounded-full bg-gradient-to-br ${avatarColors[colorIdx]} flex items-center justify-center text-white text-[12px] font-bold flex-shrink-0 shadow-sm">
             ${initials}
-            <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-[var(--surface-2)]"></span>
           </div>
-          <div>
-            <div class="text-[14px] font-semibold text-[var(--text-primary)]">${escapeHtml(displayName)}</div>
-            <div class="flex items-center gap-2">
+          <div class="min-w-0">
+            <div class="text-[14px] font-semibold text-[var(--text-primary)] truncate">${escapeHtml(displayName)}</div>
+            <div class="flex items-center gap-2 mt-0.5">
               <span class="text-[11px] text-[var(--text-muted)] font-mono">${formatPhoneDisplay(phone)}</span>
-              <span class="inline-flex items-center gap-0.5 text-[9px] text-green-400"><span class="w-1.5 h-1.5 rounded-full bg-green-500 inline-block animate-pulse"></span> online</span>
+              <span class="inline-flex items-center gap-1 text-[9px] text-green-400 font-medium"><span class="w-1.5 h-1.5 rounded-full bg-green-500 inline-block animate-pulse"></span>online</span>
             </div>
           </div>
         </div>
-        <div class="flex items-center gap-2">
-          <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-400 bg-indigo-500/10 px-2 py-1 rounded-full"><i data-lucide="bot" class="w-3 h-3"></i> IA N1</span>
-          <div id="conv-poll-indicator" class="flex items-center gap-1 text-[10px] text-[var(--text-muted)] opacity-60" title="Atualização automática a cada 8s">
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <span id="conv-ai-status" class="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-full"><i data-lucide="bot" class="w-3 h-3"></i> IA ativa</span>
+          <div class="flex items-center gap-1 text-[10px] text-[var(--text-muted)] opacity-50" title="Atualização automática">
             <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
           </div>
-          <button onclick="loadConversationList(); if(selectedConvPhone) openConversation(selectedConvPhone);" class="w-8 h-8 rounded-lg bg-[var(--glass)] border border-[var(--border-color)] text-[var(--text-muted)] flex items-center justify-center cursor-pointer hover:text-[var(--text-primary)] hover:bg-[var(--glass-hover)] transition-all duration-150" title="Atualizar"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i></button>
+          <button onclick="loadConversationList(); if(selectedConvPhone) openConversation(selectedConvPhone);" class="w-8 h-8 rounded-xl bg-[var(--glass)] border border-[var(--border-color)] text-[var(--text-muted)] flex items-center justify-center cursor-pointer hover:text-[var(--text-primary)] hover:bg-[var(--glass-hover)] transition-all duration-150" title="Atualizar" aria-label="Atualizar conversa"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i></button>
         </div>`;
       refreshIcons();
 
@@ -1928,6 +1961,7 @@
         const msgs = await supabaseGet(`conversations?phone=eq.${encodeURIComponent(phone)}&order=created_at.asc&limit=200`);
         lastChatMsgCount = msgs.length;
         renderChatMessages(msgs, false);
+        checkPauseStatus(phone);
       } catch (err) {
         chatEl.innerHTML = `<div class="flex items-center justify-center h-full text-red-400 text-[13px]">${err.message}</div>`;
       }
@@ -1936,7 +1970,13 @@
     function renderChatMessages(msgs, isUpdate) {
       const chatEl = document.getElementById('conv-chat-messages');
       if (!msgs.length) {
-        chatEl.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center"><div class="text-[13px] text-[var(--text-muted)]">Nenhuma mensagem encontrada</div></div>`;
+        chatEl.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center">
+          <div class="w-14 h-14 rounded-2xl bg-[var(--surface-2)] border border-[var(--border-color)] flex items-center justify-center mb-3">
+            <i data-lucide="message-square" class="w-6 h-6 text-[var(--text-muted)] opacity-30"></i>
+          </div>
+          <div class="text-[13px] text-[var(--text-muted)]">Nenhuma mensagem encontrada</div>
+        </div>`;
+        refreshIcons();
         return;
       }
 
@@ -1947,37 +1987,63 @@
         const msgDate = new Date(m.created_at).toLocaleDateString('pt-BR');
         if (msgDate !== lastDate) {
           lastDate = msgDate;
-          const isToday = msgDate === new Date().toLocaleDateString('pt-BR');
-          const dateLabel = isToday ? 'Hoje' : msgDate;
-          html += `<div class="flex items-center gap-3 my-4"><div class="flex-1 h-px bg-[var(--border-color)]"></div><span class="text-[10px] text-[var(--text-muted)] font-medium px-3 py-0.5 bg-[var(--surface-2)] rounded-full border border-[var(--border-color)]">${dateLabel}</span><div class="flex-1 h-px bg-[var(--border-color)]"></div></div>`;
+          const today = new Date().toLocaleDateString('pt-BR');
+          const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('pt-BR');
+          const dateLabel = msgDate === today ? 'Hoje' : msgDate === yesterday ? 'Ontem' : msgDate;
+          html += `<div class="flex items-center gap-3 my-5"><div class="flex-1 h-px bg-[var(--border-color)]/60"></div><span class="text-[10px] text-[var(--text-muted)] font-medium px-3 py-1 bg-[var(--surface-2)] rounded-full border border-[var(--border-color)] shadow-sm">${dateLabel}</span><div class="flex-1 h-px bg-[var(--border-color)]/60"></div></div>`;
         }
         const isOut = m.direction === 'outbound';
         const time = new Date(m.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         const isAudio = m.message_type === 'audioMessage';
-        const audioIcon = isAudio ? '<i data-lucide="mic" class="w-3 h-3 inline-block mr-1 opacity-60"></i>' : '';
         const isNew = isUpdate && i >= msgs.length - 3;
         const animClass = isNew ? 'animate-slide-up' : '';
 
-        // Check if next message is same direction (for grouping)
+        // Grouping logic
         const nextMsg = msgs[i + 1];
+        const prevMsg = msgs[i - 1];
         const isGrouped = nextMsg && nextMsg.direction === m.direction && (new Date(nextMsg.created_at) - new Date(m.created_at)) < 60000;
-        const spacing = isGrouped ? 'mb-0.5' : 'mb-2';
+        const isFirstInGroup = !prevMsg || prevMsg.direction !== m.direction || (new Date(m.created_at) - new Date(prevMsg.created_at)) > 60000;
+        const spacing = isGrouped ? 'mb-[3px]' : 'mb-3';
+
+        // Bubble radius: WhatsApp-style tail on first, flat on grouped
+        const outRadius = isFirstInGroup ? 'rounded-2xl rounded-br-md' : isGrouped ? 'rounded-2xl rounded-r-lg' : 'rounded-2xl rounded-br-md';
+        const inRadius = isFirstInGroup ? 'rounded-2xl rounded-bl-md' : isGrouped ? 'rounded-2xl rounded-l-lg' : 'rounded-2xl rounded-bl-md';
 
         if (isOut) {
           const isHuman = m.sender_name === 'Atendente CRM';
-          const outBg = isHuman ? 'bg-gradient-to-r from-emerald-500/15 to-emerald-600/15 border border-emerald-500/20' : 'bg-gradient-to-r from-indigo-500/15 to-indigo-600/15 border border-indigo-500/20';
-          html += `<div class="flex justify-end ${spacing} ${animClass}"><div class="max-w-[75%] px-3.5 py-2 rounded-2xl ${isGrouped ? 'rounded-r-lg' : 'rounded-br-md'} ${outBg}">
-            <div class="text-[13px] text-[var(--text-primary)] leading-relaxed whitespace-pre-wrap break-words">${escapeHtml(m.message_text)}</div>
-            <div class="flex items-center justify-end gap-1.5 mt-0.5"><span class="text-[10px] ${m.sender_name === 'Atendente CRM' ? 'text-emerald-400' : 'text-indigo-400'} font-medium">${m.sender_name === 'Atendente CRM' ? 'Atendente' : 'IA'}</span><span class="text-[10px] text-[var(--text-muted)]">${time}</span></div>
+          const bubbleBg = isHuman
+            ? 'bg-emerald-500/12 border border-emerald-500/15'
+            : 'bg-indigo-500/12 border border-indigo-500/15';
+          const senderColor = isHuman ? 'text-emerald-400' : 'text-indigo-400';
+          const senderIcon = isHuman ? '<i data-lucide="headset" class="w-2.5 h-2.5"></i>' : '<i data-lucide="bot" class="w-2.5 h-2.5"></i>';
+          const senderLabel = isHuman ? 'Atendente' : 'IA';
+          const showSender = isFirstInGroup;
+
+          html += `<div class="flex justify-end ${spacing} ${animClass}"><div class="max-w-[70%]">
+            ${showSender ? `<div class="flex items-center justify-end gap-1 mb-1 mr-1"><span class="inline-flex items-center gap-1 text-[10px] ${senderColor} font-medium">${senderIcon} ${senderLabel}</span></div>` : ''}
+            <div class="px-3.5 py-2 ${outRadius} ${bubbleBg}">
+              <div class="text-[13px] text-[var(--text-primary)] leading-[1.55] whitespace-pre-wrap break-words">${escapeHtml(m.message_text)}</div>
+              <div class="flex items-center justify-end gap-1 mt-1 -mb-0.5">
+                <span class="text-[10px] text-[var(--text-muted)]/60 tabular-nums">${time}</span>
+                <svg class="w-[14px] h-[14px] ${senderColor}" viewBox="0 0 16 16" fill="none"><path d="M1.5 8.5L5 12L14.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 8.5L8.5 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/></svg>
+              </div>
+            </div>
           </div></div>`;
         } else {
-          // Only show sender name on first message of a group
-          const prevMsg = msgs[i - 1];
-          const showName = !prevMsg || prevMsg.direction !== 'inbound' || (new Date(m.created_at) - new Date(prevMsg.created_at)) > 60000;
-          html += `<div class="flex justify-start ${spacing} ${animClass}"><div class="max-w-[75%] px-3.5 py-2 rounded-2xl ${isGrouped ? 'rounded-l-lg' : 'rounded-bl-md'} bg-[var(--surface-2)] border border-[var(--border-color)]">
-            ${showName ? `<div class="text-[11px] font-semibold text-indigo-400 mb-0.5">${escapeHtml(m.sender_name || 'Cliente')}</div>` : ''}
-            <div class="text-[13px] text-[var(--text-primary)] leading-relaxed whitespace-pre-wrap break-words">${audioIcon}${escapeHtml(m.message_text)}</div>
-            <div class="text-[10px] text-[var(--text-muted)] mt-0.5">${time}</div>
+          const showName = isFirstInGroup;
+          const audioEl = isAudio ? `<div class="flex items-center gap-2 mb-1">
+            <div class="w-8 h-8 rounded-full bg-indigo-500/15 flex items-center justify-center flex-shrink-0"><i data-lucide="mic" class="w-3.5 h-3.5 text-indigo-400"></i></div>
+            <div class="flex-1 h-1 rounded-full bg-[var(--border-color)] relative"><div class="h-full w-3/4 rounded-full bg-indigo-400/40"></div></div>
+            <span class="text-[10px] text-[var(--text-muted)] tabular-nums flex-shrink-0">0:00</span>
+          </div>` : '';
+
+          html += `<div class="flex justify-start ${spacing} ${animClass}"><div class="max-w-[70%]">
+            ${showName ? `<div class="flex items-center gap-1 mb-1 ml-1"><span class="text-[10px] font-semibold text-[var(--text-muted)]">${escapeHtml(m.sender_name || 'Cliente')}</span></div>` : ''}
+            <div class="px-3.5 py-2 ${inRadius} bg-[var(--surface-2)] border border-[var(--border-color)]">
+              ${audioEl}
+              <div class="text-[13px] text-[var(--text-primary)] leading-[1.55] whitespace-pre-wrap break-words">${escapeHtml(m.message_text)}</div>
+              <div class="text-[10px] text-[var(--text-muted)]/60 mt-1 -mb-0.5 tabular-nums">${time}</div>
+            </div>
           </div></div>`;
         }
       }
@@ -2013,9 +2079,11 @@
     const EVO_INSTANCE = 'Suporte MF';
     const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhyc3N3bGFpcGRjemhvY3dtdmJsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjcyMzUyNSwiZXhwIjoyMDg4Mjk5NTI1fQ.BLietVicaHMOg5b7RVD2B68OalKUfMzfRCti7XIbqBs';
 
+    let pauseTimerInterval = null;
+
     function showReplyBar() {
       const bar = document.getElementById('conv-reply-bar');
-      if (bar) { bar.classList.remove('hidden'); bar.classList.add('flex'); }
+      if (bar) { bar.classList.remove('hidden'); bar.classList.add('flex'); bar.style.flexDirection = 'column'; }
       refreshIcons();
     }
 
@@ -2025,18 +2093,89 @@
       const input = document.getElementById('conv-reply-input');
       if (input) { input.value = ''; input.style.height = 'auto'; }
       updateSendBtn();
+      hidePauseBanner();
     }
 
     function autoResizeReplyInput(el) {
       el.style.height = 'auto';
       el.style.height = Math.min(el.scrollHeight, 120) + 'px';
       updateSendBtn();
+      updateCharCount();
     }
 
     function updateSendBtn() {
       const input = document.getElementById('conv-reply-input');
       const btn = document.getElementById('conv-send-btn');
       if (input && btn) btn.disabled = !input.value.trim();
+    }
+
+    function updateCharCount() {
+      const input = document.getElementById('conv-reply-input');
+      const counter = document.getElementById('conv-char-count');
+      if (!input || !counter) return;
+      const len = input.value.length;
+      counter.textContent = len > 0 ? `${len} caracteres` : '';
+    }
+
+    // Pause banner
+    async function checkPauseStatus(phone) {
+      const cleanPhone = phone.replace('@s.whatsapp.net', '');
+      try {
+        const rows = await supabaseGet(`chat_memory?session_id=eq.pause:${encodeURIComponent(cleanPhone)}&role=eq.pause&order=created_at.desc&limit=1`);
+        if (rows && rows.length > 0) {
+          const pausedAt = new Date(rows[0].content || rows[0].created_at);
+          const elapsed = Date.now() - pausedAt.getTime();
+          const PAUSE_MS = 30 * 60 * 1000;
+          if (elapsed < PAUSE_MS) {
+            showPauseBanner(pausedAt, PAUSE_MS);
+            updateAiStatus(false);
+            return;
+          }
+        }
+      } catch (e) { /* silent */ }
+      hidePauseBanner();
+      updateAiStatus(true);
+    }
+
+    function showPauseBanner(pausedAt, pauseMs) {
+      const banner = document.getElementById('conv-pause-banner');
+      if (!banner) return;
+      banner.classList.remove('hidden');
+      banner.classList.add('flex');
+      if (pauseTimerInterval) clearInterval(pauseTimerInterval);
+      const updateTimer = () => {
+        const remaining = pauseMs - (Date.now() - pausedAt.getTime());
+        if (remaining <= 0) {
+          hidePauseBanner();
+          updateAiStatus(true);
+          return;
+        }
+        const mins = Math.floor(remaining / 60000);
+        const secs = Math.floor((remaining % 60000) / 1000);
+        const timerEl = document.getElementById('conv-pause-timer');
+        if (timerEl) timerEl.textContent = `${mins}:${String(secs).padStart(2, '0')} restantes`;
+      };
+      updateTimer();
+      pauseTimerInterval = setInterval(updateTimer, 1000);
+    }
+
+    function hidePauseBanner() {
+      const banner = document.getElementById('conv-pause-banner');
+      if (banner) { banner.classList.add('hidden'); banner.classList.remove('flex'); }
+      if (pauseTimerInterval) { clearInterval(pauseTimerInterval); pauseTimerInterval = null; }
+    }
+
+    function updateAiStatus(active) {
+      const el = document.getElementById('conv-ai-status');
+      if (!el) return;
+      if (active) {
+        el.className = 'inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-full';
+        el.innerHTML = '<i data-lucide="bot" class="w-3 h-3"></i> IA ativa';
+      } else {
+        el.className = 'inline-flex items-center gap-1 text-[10px] font-semibold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full';
+        el.innerHTML = '<i data-lucide="pause-circle" class="w-3 h-3"></i> IA pausada';
+      }
+      refreshIcons();
     }
 
     function handleReplyKeydown(e) {
@@ -2056,8 +2195,8 @@
       // Disable while sending
       btn.disabled = true;
       input.disabled = true;
-      statusEl.className = 'text-[11px] mt-1.5 ml-1 text-[var(--text-muted)]';
-      statusEl.textContent = 'Enviando...';
+      statusEl.className = 'text-[11px] px-4 py-1.5 border-b border-[var(--border-color)]/50 text-[var(--text-muted)] flex items-center gap-1.5';
+      statusEl.innerHTML = '<div class="animate-spin w-3 h-3 border-[1.5px] border-[var(--border-color)] border-t-indigo-500 rounded-full"></div> Enviando mensagem...';
       statusEl.classList.remove('hidden');
 
       try {
@@ -2110,17 +2249,25 @@
         input.value = '';
         input.style.height = 'auto';
         updateSendBtn();
-        statusEl.classList.add('hidden');
+        updateCharCount();
 
-        // Immediately refresh chat
+        // Show success feedback
+        statusEl.className = 'text-[11px] px-4 py-1.5 border-b border-[var(--border-color)]/50 text-emerald-400 flex items-center gap-1.5';
+        statusEl.innerHTML = '<svg class="w-3 h-3" viewBox="0 0 16 16" fill="none"><path d="M2 8.5L6 12.5L14 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Mensagem enviada · IA pausada por 30 min';
+        statusEl.classList.remove('hidden');
+        setTimeout(() => statusEl.classList.add('hidden'), 3000);
+
+        // Immediately refresh chat and pause status
         await pollActiveChat();
         const chatEl = document.getElementById('conv-chat-messages');
         if (chatEl) chatEl.scrollTop = chatEl.scrollHeight;
+        checkPauseStatus(selectedConvPhone);
 
       } catch (err) {
-        statusEl.className = 'text-[11px] mt-1.5 ml-1 text-red-400';
-        statusEl.textContent = `Erro: ${err.message}`;
+        statusEl.className = 'text-[11px] px-4 py-1.5 border-b border-[var(--border-color)]/50 text-red-400 flex items-center gap-1.5';
+        statusEl.innerHTML = `<i data-lucide="alert-circle" class="w-3 h-3"></i> ${err.message}`;
         statusEl.classList.remove('hidden');
+        refreshIcons();
         setTimeout(() => statusEl.classList.add('hidden'), 4000);
       } finally {
         input.disabled = false;
