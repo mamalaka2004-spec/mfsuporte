@@ -2010,7 +2010,7 @@
     // ---- REPLY COMPOSER ----
     const EVO_API_URL = 'https://evo.mfmanagerfashion.net';
     const EVO_API_KEY = 'C0836A50FBC0-48D4-B5DA-61EE3BD79883';
-    const EVO_INSTANCE = 'MF-SUPORTE';
+    const EVO_INSTANCE = 'Suporte MF';
 
     function showReplyBar() {
       const bar = document.getElementById('conv-reply-bar');
@@ -2062,7 +2062,7 @@
       try {
         // 1. Send via Evolution API
         const phone = selectedConvPhone.replace('@s.whatsapp.net', '');
-        const evoRes = await fetch(`${EVO_API_URL}/message/sendText/${EVO_INSTANCE}`, {
+        const evoRes = await fetch(`${EVO_API_URL}/message/sendText/${encodeURIComponent(EVO_INSTANCE)}`, {
           method: 'POST',
           headers: { 'apikey': EVO_API_KEY, 'Content-Type': 'application/json' },
           body: JSON.stringify({ number: phone, text: text })
