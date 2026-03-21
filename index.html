@@ -385,14 +385,58 @@
         <!-- Reply composer -->
         <div id="conv-reply-bar" class="hidden flex-shrink-0 border-t border-[var(--border-color)] bg-[var(--surface-2)]/80 backdrop-blur-sm">
           <div id="conv-send-status" class="hidden text-[11px] px-4 py-1.5 border-b border-[var(--border-color)]/50"></div>
+          <!-- File preview -->
+          <div id="conv-file-preview" class="hidden px-4 pt-3">
+            <div class="flex items-center gap-3 bg-[var(--surface)] border border-[var(--border-color)] rounded-xl p-3">
+              <div id="conv-file-thumb" class="w-14 h-14 rounded-lg bg-[var(--surface-3)] border border-[var(--border-color)] flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <i data-lucide="file" class="w-5 h-5 text-[var(--text-muted)]"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div id="conv-file-name" class="text-[13px] text-[var(--text-primary)] font-medium truncate"></div>
+                <div id="conv-file-size" class="text-[11px] text-[var(--text-muted)] mt-0.5"></div>
+              </div>
+              <button onclick="clearFileAttachment()" class="w-7 h-7 rounded-lg bg-[var(--glass)] border border-[var(--border-color)] text-[var(--text-muted)] flex items-center justify-center cursor-pointer hover:text-red-400 hover:border-red-500/30 transition-all duration-150" aria-label="Remover arquivo">
+                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+          <!-- Emoji picker -->
+          <div id="conv-emoji-picker" class="hidden px-4 pt-2">
+            <div class="bg-[var(--surface)] border border-[var(--border-color)] rounded-xl p-2 shadow-lg">
+              <div class="flex gap-1 mb-2 border-b border-[var(--border-color)] pb-2">
+                <button onclick="showEmojiCategory('faces')" class="emoji-cat-btn active text-[12px] px-2 py-1 rounded-lg bg-[var(--glass)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-hover)] transition-all cursor-pointer">😊</button>
+                <button onclick="showEmojiCategory('gestures')" class="emoji-cat-btn text-[12px] px-2 py-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-hover)] transition-all cursor-pointer">👍</button>
+                <button onclick="showEmojiCategory('symbols')" class="emoji-cat-btn text-[12px] px-2 py-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-hover)] transition-all cursor-pointer">❤️</button>
+                <button onclick="showEmojiCategory('objects')" class="emoji-cat-btn text-[12px] px-2 py-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-hover)] transition-all cursor-pointer">🎉</button>
+              </div>
+              <div id="conv-emoji-grid" class="grid grid-cols-8 gap-0.5 max-h-[160px] overflow-y-auto"></div>
+            </div>
+          </div>
+          <!-- Toolbar + Input -->
           <div class="flex items-end gap-2 px-4 py-3">
+            <div class="flex items-center gap-0.5 flex-shrink-0 mb-1.5">
+              <button onclick="document.getElementById('conv-file-input-img').click()" class="w-8 h-8 rounded-xl text-[var(--text-muted)] flex items-center justify-center cursor-pointer hover:text-[var(--text-primary)] hover:bg-[var(--glass)] transition-all duration-150" title="Enviar imagem" aria-label="Enviar imagem">
+                <i data-lucide="image" class="w-4 h-4"></i>
+              </button>
+              <button onclick="document.getElementById('conv-file-input-doc').click()" class="w-8 h-8 rounded-xl text-[var(--text-muted)] flex items-center justify-center cursor-pointer hover:text-[var(--text-primary)] hover:bg-[var(--glass)] transition-all duration-150" title="Enviar arquivo" aria-label="Enviar arquivo">
+                <i data-lucide="paperclip" class="w-4 h-4"></i>
+              </button>
+              <button onclick="toggleEmojiPicker()" class="w-8 h-8 rounded-xl text-[var(--text-muted)] flex items-center justify-center cursor-pointer hover:text-[var(--text-primary)] hover:bg-[var(--glass)] transition-all duration-150" title="Emojis" aria-label="Emojis">
+                <i data-lucide="smile" class="w-4 h-4"></i>
+              </button>
+              <div class="w-px h-5 bg-[var(--border-color)] mx-0.5"></div>
+              <button onclick="wrapSelection('*')" class="w-7 h-7 rounded-lg text-[var(--text-muted)] flex items-center justify-center cursor-pointer hover:text-[var(--text-primary)] hover:bg-[var(--glass)] transition-all duration-150 text-[12px] font-bold" title="Negrito (WhatsApp)" aria-label="Negrito">B</button>
+              <button onclick="wrapSelection('_')" class="w-7 h-7 rounded-lg text-[var(--text-muted)] flex items-center justify-center cursor-pointer hover:text-[var(--text-primary)] hover:bg-[var(--glass)] transition-all duration-150 text-[12px] italic" title="Itálico (WhatsApp)" aria-label="Itálico">I</button>
+              <button onclick="wrapSelection('~')" class="w-7 h-7 rounded-lg text-[var(--text-muted)] flex items-center justify-center cursor-pointer hover:text-[var(--text-primary)] hover:bg-[var(--glass)] transition-all duration-150 text-[12px] line-through" title="Tachado (WhatsApp)" aria-label="Tachado">S</button>
+              <button onclick="wrapSelection('```')" class="w-7 h-7 rounded-lg text-[var(--text-muted)] flex items-center justify-center cursor-pointer hover:text-[var(--text-primary)] hover:bg-[var(--glass)] transition-all duration-150 text-[11px] font-mono" title="Código (WhatsApp)" aria-label="Código">&lt;/&gt;</button>
+            </div>
             <div class="flex-1 relative">
               <textarea id="conv-reply-input" rows="1" placeholder="Digite uma mensagem..." aria-label="Mensagem"
                 class="w-full bg-[var(--surface)] border border-[var(--border-color)] text-[var(--text-primary)] text-[13px] px-4 py-2.5 rounded-2xl resize-none transition-all duration-150 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 max-h-[120px] leading-relaxed placeholder:text-[var(--text-muted)]/60"
                 onkeydown="handleReplyKeydown(event)" oninput="autoResizeReplyInput(this)"></textarea>
             </div>
             <button id="conv-send-btn" onclick="sendReplyMessage()" disabled aria-label="Enviar mensagem"
-              class="w-10 h-10 rounded-2xl bg-indigo-500 text-white flex items-center justify-center cursor-pointer transition-all duration-200 hover:bg-indigo-600 hover:shadow-lg hover:shadow-indigo-500/25 hover:scale-105 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-indigo-500 disabled:hover:shadow-none disabled:hover:scale-100 flex-shrink-0 mb-px">
+              class="w-10 h-10 rounded-2xl bg-indigo-500 text-white flex items-center justify-center cursor-pointer transition-all duration-200 hover:bg-indigo-600 hover:shadow-lg hover:shadow-indigo-500/25 hover:scale-105 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-indigo-500 disabled:hover:shadow-none disabled:hover:scale-100 flex-shrink-0 mb-1.5">
               <i data-lucide="send" class="w-4 h-4"></i>
             </button>
           </div>
@@ -401,6 +445,16 @@
             <span class="text-[10px] text-[var(--text-muted)]/30">·</span>
             <span id="conv-char-count" class="text-[10px] text-[var(--text-muted)]/40 tabular-nums"></span>
           </div>
+          <!-- Hidden file inputs -->
+          <input type="file" id="conv-file-input-img" accept="image/*,video/*" class="hidden" onchange="handleFileSelect(this, 'image')">
+          <input type="file" id="conv-file-input-doc" accept="*/*" class="hidden" onchange="handleFileSelect(this, 'document')">
+        </div>
+        <!-- Lightbox -->
+        <div id="conv-lightbox" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center cursor-pointer" onclick="closeLightbox()">
+          <img id="conv-lightbox-img" class="max-w-[90vw] max-h-[90vh] rounded-xl shadow-2xl" src="" alt="Imagem ampliada">
+          <button class="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-all" aria-label="Fechar">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
         </div>
       </div>
     </div>
@@ -1748,7 +1802,7 @@
 
     async function pollConversations() {
       try {
-        const msgs = await supabaseGet('conversations?select=phone,sender_name,message_text,direction,created_at&order=created_at.desc&limit=500');
+        const msgs = await supabaseGet('conversations?select=phone,sender_name,message_text,direction,created_at,message_type,media_url,media_mime_type,file_name&order=created_at.desc&limit=500');
         const newTimestamp = msgs.length ? msgs[0].created_at : null;
         const totalInbound = msgs.filter(m => m.direction === 'inbound').length;
 
@@ -1845,7 +1899,7 @@
         listEl.innerHTML = `<div class="flex items-center justify-center h-32"><div class="animate-spin w-5 h-5 border-2 border-[var(--border-color)] border-t-indigo-500 rounded-full"></div></div>`;
       }
       try {
-        const msgs = await supabaseGet('conversations?select=phone,sender_name,message_text,direction,created_at&order=created_at.desc&limit=500');
+        const msgs = await supabaseGet('conversations?select=phone,sender_name,message_text,direction,created_at,message_type,media_url,media_mime_type,file_name&order=created_at.desc&limit=500');
         lastConvTimestamp = msgs.length ? msgs[0].created_at : null;
         lastConvTotalCount = msgs.filter(m => m.direction === 'inbound').length;
         allConversations = groupConversations(msgs);
@@ -1950,6 +2004,7 @@
         </div>
         <div class="flex items-center gap-1.5 flex-shrink-0">
           <span id="conv-ai-status" class="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-full"><i data-lucide="bot" class="w-3 h-3"></i> IA ativa</span>
+          <button id="conv-pause-toggle" onclick="togglePauseIA()" class="inline-flex items-center gap-1 text-[10px] font-medium text-[var(--text-muted)] bg-[var(--glass)] border border-[var(--border-color)] px-2.5 py-1 rounded-full cursor-pointer hover:bg-[var(--glass-hover)] hover:text-[var(--text-primary)] transition-all duration-150" title="Pausar IA nesta conversa"><i data-lucide="pause" class="w-3 h-3"></i> Pausar</button>
           <div class="flex items-center gap-1 text-[10px] text-[var(--text-muted)] opacity-50" title="Atualização automática">
             <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
           </div>
@@ -1965,6 +2020,34 @@
       } catch (err) {
         chatEl.innerHTML = `<div class="flex items-center justify-center h-full text-red-400 text-[13px]">${err.message}</div>`;
       }
+    }
+
+    function renderMediaContent(m) {
+      if (!m.media_url) return '';
+      const mime = m.media_mime_type || '';
+      const fname = m.file_name || 'arquivo';
+      if (mime.startsWith('image/')) {
+        return `<img src="${escapeHtml(m.media_url)}" alt="${escapeHtml(fname)}" class="max-w-[280px] w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity mb-1" onclick="openLightbox('${escapeHtml(m.media_url)}')" loading="lazy">`;
+      }
+      if (mime.startsWith('video/')) {
+        return `<video src="${escapeHtml(m.media_url)}" controls class="max-w-[280px] w-full rounded-lg mb-1" preload="metadata"></video>`;
+      }
+      if (mime.startsWith('audio/')) {
+        return `<audio src="${escapeHtml(m.media_url)}" controls class="w-full max-w-[260px] mb-1" preload="metadata"></audio>`;
+      }
+      // Document (PDF, DOC, etc)
+      const ext = fname.split('.').pop()?.toUpperCase() || 'FILE';
+      const iconColor = mime === 'application/pdf' ? 'text-red-400' : 'text-blue-400';
+      return `<a href="${escapeHtml(m.media_url)}" target="_blank" rel="noopener" class="flex items-center gap-2.5 p-2.5 rounded-lg bg-black/10 hover:bg-black/15 transition-colors mb-1 no-underline">
+        <div class="w-9 h-9 rounded-lg bg-black/10 flex items-center justify-center flex-shrink-0">
+          <i data-lucide="file-text" class="w-4 h-4 ${iconColor}"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-[12px] text-[var(--text-primary)] font-medium truncate">${escapeHtml(fname)}</div>
+          <div class="text-[10px] text-[var(--text-muted)]">${ext}</div>
+        </div>
+        <i data-lucide="download" class="w-3.5 h-3.5 text-[var(--text-muted)] flex-shrink-0"></i>
+      </a>`;
     }
 
     function renderChatMessages(msgs, isUpdate) {
@@ -1995,6 +2078,7 @@
         const isOut = m.direction === 'outbound';
         const time = new Date(m.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         const isAudio = m.message_type === 'audioMessage';
+        const hasMedia = !!m.media_url;
         const isNew = isUpdate && i >= msgs.length - 3;
         const animClass = isNew ? 'animate-slide-up' : '';
 
@@ -2009,21 +2093,31 @@
         const outRadius = isFirstInGroup ? 'rounded-2xl rounded-br-md' : isGrouped ? 'rounded-2xl rounded-r-lg' : 'rounded-2xl rounded-br-md';
         const inRadius = isFirstInGroup ? 'rounded-2xl rounded-bl-md' : isGrouped ? 'rounded-2xl rounded-l-lg' : 'rounded-2xl rounded-bl-md';
 
+        // Media content (if present)
+        const mediaHtml = hasMedia ? renderMediaContent(m) : '';
+        // Text: hide if it's just the file name placeholder like [filename.jpg]
+        const isFilePlaceholder = hasMedia && m.message_text && /^\[.+\]$/.test(m.message_text.trim());
+        const textContent = (!isFilePlaceholder && m.message_text) ? `<div class="text-[13px] text-[var(--text-primary)] leading-[1.55] whitespace-pre-wrap break-words">${escapeHtml(m.message_text)}</div>` : '';
+        // For media bubbles with images/video, reduce padding
+        const mediaPadding = hasMedia && (m.media_mime_type?.startsWith('image/') || m.media_mime_type?.startsWith('video/')) ? 'p-1.5' : 'px-3.5 py-2';
+
         if (isOut) {
           const isHuman = m.sender_name === 'Atendente CRM';
           const bubbleBg = isHuman
-            ? 'bg-emerald-500/12 border border-emerald-500/15'
-            : 'bg-indigo-500/12 border border-indigo-500/15';
+            ? 'bg-emerald-500/20 border border-emerald-500/25'
+            : 'bg-indigo-500/20 border border-indigo-500/25';
           const senderColor = isHuman ? 'text-emerald-400' : 'text-indigo-400';
           const senderIcon = isHuman ? '<i data-lucide="headset" class="w-2.5 h-2.5"></i>' : '<i data-lucide="bot" class="w-2.5 h-2.5"></i>';
           const senderLabel = isHuman ? 'Atendente' : 'IA';
           const showSender = isFirstInGroup;
+          const padding = hasMedia ? mediaPadding : 'px-3.5 py-2';
 
           html += `<div class="flex justify-end ${spacing} ${animClass}"><div class="max-w-[70%]">
             ${showSender ? `<div class="flex items-center justify-end gap-1 mb-1 mr-1"><span class="inline-flex items-center gap-1 text-[10px] ${senderColor} font-medium">${senderIcon} ${senderLabel}</span></div>` : ''}
-            <div class="px-3.5 py-2 ${outRadius} ${bubbleBg}">
-              <div class="text-[13px] text-[var(--text-primary)] leading-[1.55] whitespace-pre-wrap break-words">${escapeHtml(m.message_text)}</div>
-              <div class="flex items-center justify-end gap-1 mt-1 -mb-0.5">
+            <div class="${padding} ${outRadius} ${bubbleBg} overflow-hidden">
+              ${mediaHtml}
+              ${textContent ? `<div class="${hasMedia ? 'px-2 pt-1' : ''}">${textContent}</div>` : ''}
+              <div class="flex items-center justify-end gap-1 ${hasMedia ? 'px-2 pb-1' : ''} mt-1 -mb-0.5">
                 <span class="text-[10px] text-[var(--text-muted)]/60 tabular-nums">${time}</span>
                 <svg class="w-[14px] h-[14px] ${senderColor}" viewBox="0 0 16 16" fill="none"><path d="M1.5 8.5L5 12L14.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 8.5L8.5 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/></svg>
               </div>
@@ -2036,13 +2130,15 @@
             <div class="flex-1 h-1 rounded-full bg-[var(--border-color)] relative"><div class="h-full w-3/4 rounded-full bg-indigo-400/40"></div></div>
             <span class="text-[10px] text-[var(--text-muted)] tabular-nums flex-shrink-0">0:00</span>
           </div>` : '';
+          const padding = hasMedia ? mediaPadding : 'px-3.5 py-2';
 
           html += `<div class="flex justify-start ${spacing} ${animClass}"><div class="max-w-[70%]">
             ${showName ? `<div class="flex items-center gap-1 mb-1 ml-1"><span class="text-[10px] font-semibold text-[var(--text-muted)]">${escapeHtml(m.sender_name || 'Cliente')}</span></div>` : ''}
-            <div class="px-3.5 py-2 ${inRadius} bg-[var(--surface-2)] border border-[var(--border-color)]">
+            <div class="${padding} ${inRadius} bg-[var(--surface-3)] border border-[var(--border-light)] overflow-hidden">
               ${audioEl}
-              <div class="text-[13px] text-[var(--text-primary)] leading-[1.55] whitespace-pre-wrap break-words">${escapeHtml(m.message_text)}</div>
-              <div class="text-[10px] text-[var(--text-muted)]/60 mt-1 -mb-0.5 tabular-nums">${time}</div>
+              ${mediaHtml}
+              ${textContent ? `<div class="${hasMedia ? 'px-2 pt-1' : ''}">${textContent}</div>` : ''}
+              <div class="text-[10px] text-[var(--text-muted)]/60 ${hasMedia ? 'px-2 pb-1' : ''} mt-1 -mb-0.5 tabular-nums">${time}</div>
             </div>
           </div></div>`;
         }
@@ -2106,7 +2202,7 @@
     function updateSendBtn() {
       const input = document.getElementById('conv-reply-input');
       const btn = document.getElementById('conv-send-btn');
-      if (input && btn) btn.disabled = !input.value.trim();
+      if (input && btn) btn.disabled = !input.value.trim() && !pendingFile;
     }
 
     function updateCharCount() {
@@ -2165,17 +2261,76 @@
       if (pauseTimerInterval) { clearInterval(pauseTimerInterval); pauseTimerInterval = null; }
     }
 
+    let currentPauseActive = false;
+
     function updateAiStatus(active) {
+      currentPauseActive = !active;
       const el = document.getElementById('conv-ai-status');
-      if (!el) return;
-      if (active) {
-        el.className = 'inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-full';
-        el.innerHTML = '<i data-lucide="bot" class="w-3 h-3"></i> IA ativa';
-      } else {
-        el.className = 'inline-flex items-center gap-1 text-[10px] font-semibold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full';
-        el.innerHTML = '<i data-lucide="pause-circle" class="w-3 h-3"></i> IA pausada';
+      const toggleBtn = document.getElementById('conv-pause-toggle');
+      if (el) {
+        if (active) {
+          el.className = 'inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-full';
+          el.innerHTML = '<i data-lucide="bot" class="w-3 h-3"></i> IA ativa';
+        } else {
+          el.className = 'inline-flex items-center gap-1 text-[10px] font-semibold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full';
+          el.innerHTML = '<i data-lucide="pause-circle" class="w-3 h-3"></i> IA pausada';
+        }
+      }
+      if (toggleBtn) {
+        if (active) {
+          toggleBtn.className = 'inline-flex items-center gap-1 text-[10px] font-medium text-[var(--text-muted)] bg-[var(--glass)] border border-[var(--border-color)] px-2.5 py-1 rounded-full cursor-pointer hover:bg-amber-500/10 hover:text-amber-400 hover:border-amber-500/20 transition-all duration-150';
+          toggleBtn.innerHTML = '<i data-lucide="pause" class="w-3 h-3"></i> Pausar';
+          toggleBtn.title = 'Pausar IA nesta conversa';
+        } else {
+          toggleBtn.className = 'inline-flex items-center gap-1 text-[10px] font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full cursor-pointer hover:bg-emerald-500/20 hover:text-emerald-300 transition-all duration-150';
+          toggleBtn.innerHTML = '<i data-lucide="play" class="w-3 h-3"></i> Retomar';
+          toggleBtn.title = 'Retomar IA nesta conversa';
+        }
       }
       refreshIcons();
+    }
+
+    async function togglePauseIA() {
+      if (!selectedConvPhone) return;
+      const cleanPhone = selectedConvPhone.replace('@s.whatsapp.net', '');
+      const toggleBtn = document.getElementById('conv-pause-toggle');
+      if (toggleBtn) { toggleBtn.disabled = true; toggleBtn.style.opacity = '0.5'; }
+
+      try {
+        if (!currentPauseActive) {
+          // Pausar: POST chat_memory
+          await fetch(`${SUPABASE_URL}/rest/v1/chat_memory`, {
+            method: 'POST',
+            headers: {
+              'apikey': SUPABASE_SERVICE_KEY,
+              'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify({
+              session_id: `pause:${cleanPhone}`,
+              role: 'pause',
+              content: new Date().toISOString()
+            })
+          });
+          showToast('IA pausada por 30 minutos nesta conversa', 'success');
+        } else {
+          // Retomar: DELETE all pause records for this phone
+          await fetch(`${SUPABASE_URL}/rest/v1/chat_memory?session_id=eq.${encodeURIComponent('pause:' + cleanPhone)}&role=eq.pause`, {
+            method: 'DELETE',
+            headers: {
+              'apikey': SUPABASE_SERVICE_KEY,
+              'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
+            }
+          });
+          showToast('IA retomada nesta conversa', 'success');
+        }
+        await checkPauseStatus(selectedConvPhone);
+      } catch (err) {
+        showToast('Erro: ' + err.message, 'error');
+      } finally {
+        if (toggleBtn) { toggleBtn.disabled = false; toggleBtn.style.opacity = '1'; }
+      }
     }
 
     function handleReplyKeydown(e) {
@@ -2190,26 +2345,61 @@
       const btn = document.getElementById('conv-send-btn');
       const statusEl = document.getElementById('conv-send-status');
       const text = input?.value?.trim();
-      if (!text || !selectedConvPhone) return;
+      const hasFile = !!pendingFile;
+      if ((!text && !hasFile) || !selectedConvPhone) return;
 
       // Disable while sending
       btn.disabled = true;
       input.disabled = true;
+      const sendingLabel = hasFile ? 'Enviando mídia...' : 'Enviando mensagem...';
       statusEl.className = 'text-[11px] px-4 py-1.5 border-b border-[var(--border-color)]/50 text-[var(--text-muted)] flex items-center gap-1.5';
-      statusEl.innerHTML = '<div class="animate-spin w-3 h-3 border-[1.5px] border-[var(--border-color)] border-t-indigo-500 rounded-full"></div> Enviando mensagem...';
+      statusEl.innerHTML = `<div class="animate-spin w-3 h-3 border-[1.5px] border-[var(--border-color)] border-t-indigo-500 rounded-full"></div> ${sendingLabel}`;
       statusEl.classList.remove('hidden');
 
       try {
-        // 1. Send via Evolution API
         const phone = selectedConvPhone.replace('@s.whatsapp.net', '');
-        const evoRes = await fetch(`${EVO_API_URL}/message/sendText/${encodeURIComponent(EVO_INSTANCE)}`, {
-          method: 'POST',
-          headers: { 'apikey': EVO_API_KEY, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ number: phone, text: text })
-        });
-        if (!evoRes.ok) throw new Error(`Evolution API: ${evoRes.status}`);
+        let mediaUrl = null;
+        let mediaMimeType = null;
+        let fileName = null;
+        let msgType = 'text';
+        let msgText = text || '';
+
+        if (hasFile) {
+          // 1a. Upload to Supabase Storage
+          statusEl.innerHTML = '<div class="animate-spin w-3 h-3 border-[1.5px] border-[var(--border-color)] border-t-indigo-500 rounded-full"></div> Fazendo upload...';
+          mediaUrl = await uploadToSupabaseStorage(pendingFile.file, selectedConvPhone);
+          mediaMimeType = pendingFile.mimeType;
+          fileName = pendingFile.name;
+          msgType = pendingFile.category === 'image' ? 'imageMessage' : pendingFile.category === 'video' ? 'videoMessage' : 'documentMessage';
+
+          // 1b. Send media via Evolution API
+          statusEl.innerHTML = '<div class="animate-spin w-3 h-3 border-[1.5px] border-[var(--border-color)] border-t-indigo-500 rounded-full"></div> Enviando via WhatsApp...';
+          await sendMediaViaEvolution(selectedConvPhone, pendingFile, text);
+          if (!msgText) msgText = `[${pendingFile.name}]`;
+        } else {
+          // 1. Send text via Evolution API
+          const evoRes = await fetch(`${EVO_API_URL}/message/sendText/${encodeURIComponent(EVO_INSTANCE)}`, {
+            method: 'POST',
+            headers: { 'apikey': EVO_API_KEY, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ number: phone, text: text })
+          });
+          if (!evoRes.ok) throw new Error(`Evolution API: ${evoRes.status}`);
+        }
 
         // 2. Save to Supabase
+        const convRecord = {
+          phone: selectedConvPhone,
+          sender_name: 'Atendente CRM',
+          direction: 'outbound',
+          message_text: msgText,
+          message_type: msgType,
+          created_at: new Date().toISOString()
+        };
+        if (mediaUrl) {
+          convRecord.media_url = mediaUrl;
+          convRecord.media_mime_type = mediaMimeType;
+          convRecord.file_name = fileName;
+        }
         await fetch(`${SUPABASE_URL}/rest/v1/conversations`, {
           method: 'POST',
           headers: {
@@ -2218,18 +2408,10 @@
             'Content-Type': 'application/json',
             'Prefer': 'return=minimal'
           },
-          body: JSON.stringify({
-            phone: selectedConvPhone,
-            sender_name: 'Atendente CRM',
-            direction: 'outbound',
-            message_text: text,
-            message_type: 'text',
-            created_at: new Date().toISOString()
-          })
+          body: JSON.stringify(convRecord)
         });
 
         // 3. Set Pause (same rule as workflow — 30min pause for AI)
-        const pausePhone = selectedConvPhone.replace('@s.whatsapp.net', '');
         await fetch(`${SUPABASE_URL}/rest/v1/chat_memory`, {
           method: 'POST',
           headers: {
@@ -2239,21 +2421,23 @@
             'Prefer': 'return=minimal'
           },
           body: JSON.stringify({
-            session_id: `pause:${pausePhone}`,
+            session_id: `pause:${phone}`,
             role: 'pause',
             content: new Date().toISOString()
           })
         });
 
-        // 4. Clear input and refresh chat
+        // 4. Clear input, file, and refresh chat
         input.value = '';
         input.style.height = 'auto';
+        if (hasFile) clearFileAttachment();
         updateSendBtn();
         updateCharCount();
 
         // Show success feedback
+        const successMsg = hasFile ? 'Mídia enviada · IA pausada por 30 min' : 'Mensagem enviada · IA pausada por 30 min';
         statusEl.className = 'text-[11px] px-4 py-1.5 border-b border-[var(--border-color)]/50 text-emerald-400 flex items-center gap-1.5';
-        statusEl.innerHTML = '<svg class="w-3 h-3" viewBox="0 0 16 16" fill="none"><path d="M2 8.5L6 12.5L14 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Mensagem enviada · IA pausada por 30 min';
+        statusEl.innerHTML = `<svg class="w-3 h-3" viewBox="0 0 16 16" fill="none"><path d="M2 8.5L6 12.5L14 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> ${successMsg}`;
         statusEl.classList.remove('hidden');
         setTimeout(() => statusEl.classList.add('hidden'), 3000);
 
@@ -2271,9 +2455,207 @@
         setTimeout(() => statusEl.classList.add('hidden'), 4000);
       } finally {
         input.disabled = false;
-        btn.disabled = !input.value.trim();
+        btn.disabled = !input.value.trim() && !pendingFile;
         input.focus();
       }
+    }
+
+    // ---- FILE ATTACHMENT ----
+    let pendingFile = null; // { file, type, base64, preview }
+
+    function handleFileSelect(inputEl, category) {
+      const file = inputEl.files?.[0];
+      if (!file) return;
+      inputEl.value = '';
+
+      const maxSize = 50 * 1024 * 1024; // 50MB
+      if (file.size > maxSize) {
+        showToast('Arquivo muito grande (máx 50MB)', 'error');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64 = e.target.result;
+        const isImage = file.type.startsWith('image/');
+        const isVideo = file.type.startsWith('video/');
+
+        pendingFile = {
+          file,
+          category: isImage ? 'image' : isVideo ? 'video' : 'document',
+          base64,
+          mimeType: file.type,
+          name: file.name,
+          size: file.size
+        };
+
+        // Show preview
+        const previewEl = document.getElementById('conv-file-preview');
+        const thumbEl = document.getElementById('conv-file-thumb');
+        const nameEl = document.getElementById('conv-file-name');
+        const sizeEl = document.getElementById('conv-file-size');
+
+        nameEl.textContent = file.name;
+        sizeEl.textContent = formatFileSize(file.size);
+
+        if (isImage) {
+          thumbEl.innerHTML = `<img src="${base64}" class="w-full h-full object-cover" alt="Preview">`;
+        } else if (isVideo) {
+          thumbEl.innerHTML = '<i data-lucide="film" class="w-5 h-5 text-purple-400"></i>';
+        } else if (file.type === 'application/pdf') {
+          thumbEl.innerHTML = '<i data-lucide="file-text" class="w-5 h-5 text-red-400"></i>';
+        } else {
+          thumbEl.innerHTML = '<i data-lucide="file" class="w-5 h-5 text-[var(--text-muted)]"></i>';
+        }
+
+        previewEl.classList.remove('hidden');
+        refreshIcons();
+        updateSendBtn();
+
+        // Change placeholder to caption mode
+        const input = document.getElementById('conv-reply-input');
+        if (input) input.placeholder = 'Legenda (opcional)...';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearFileAttachment() {
+      pendingFile = null;
+      document.getElementById('conv-file-preview')?.classList.add('hidden');
+      const input = document.getElementById('conv-reply-input');
+      if (input) input.placeholder = 'Digite uma mensagem...';
+      updateSendBtn();
+    }
+
+    function formatFileSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    // ---- EMOJI PICKER ----
+    const emojiSets = {
+      faces: ['😊','😂','🥰','😍','😘','😎','🤩','😢','😭','😤','😡','🤔','🤗','😮','😱','😴','🤒','🥳','😇','🙄','😏','😬','🫠','🫡','🫢','😶','🤭','😋','😜','🤪','😵','🥴','🤯','🫣','😳','🥹'],
+      gestures: ['👍','👎','👏','🙏','🤝','💪','✌️','🤞','👋','🫶','❤️','🔥','💯','⭐','✅','❌','⚠️','💡','📌','🎯','🏆','💎','🚀','💰','📱','💻','📧','📞','🔗','📎'],
+      symbols: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','💔','❣️','💕','💗','💖','💝','💘','🩷','🩵','🩶','♥️','☺️','🌟','⚡','🌈','☀️','🌙','💫','✨','🎵','🎶','💬'],
+      objects: ['🎉','🎊','🎁','🎂','🍰','🥂','🍾','🎈','🪄','🧲','🔑','🏠','🚗','✈️','🛒','💳','📦','🎯','📊','📈','🗓️','⏰','🔔','📣','🏷️','🧾','💊','🩺','🧪','🔬']
+    };
+
+    function toggleEmojiPicker() {
+      const picker = document.getElementById('conv-emoji-picker');
+      if (picker.classList.contains('hidden')) {
+        picker.classList.remove('hidden');
+        showEmojiCategory('faces');
+      } else {
+        picker.classList.add('hidden');
+      }
+    }
+
+    function showEmojiCategory(cat) {
+      const grid = document.getElementById('conv-emoji-grid');
+      document.querySelectorAll('.emoji-cat-btn').forEach(b => b.classList.remove('active', 'bg-[var(--glass)]'));
+      event.target.closest('.emoji-cat-btn')?.classList.add('active', 'bg-[var(--glass)]');
+      grid.innerHTML = (emojiSets[cat] || []).map(e =>
+        `<button onclick="insertEmoji('${e}')" class="w-8 h-8 flex items-center justify-center text-[18px] rounded-lg hover:bg-[var(--glass)] cursor-pointer transition-all duration-100 hover:scale-110">${e}</button>`
+      ).join('');
+    }
+
+    function insertEmoji(emoji) {
+      const input = document.getElementById('conv-reply-input');
+      if (!input) return;
+      const start = input.selectionStart;
+      const end = input.selectionEnd;
+      input.value = input.value.substring(0, start) + emoji + input.value.substring(end);
+      input.selectionStart = input.selectionEnd = start + emoji.length;
+      input.focus();
+      autoResizeReplyInput(input);
+    }
+
+    // ---- TEXT FORMATTING ----
+    function wrapSelection(char) {
+      const input = document.getElementById('conv-reply-input');
+      if (!input) return;
+      const start = input.selectionStart;
+      const end = input.selectionEnd;
+      const selected = input.value.substring(start, end);
+      if (selected) {
+        input.value = input.value.substring(0, start) + char + selected + char + input.value.substring(end);
+        input.selectionStart = start;
+        input.selectionEnd = end + char.length * 2;
+      } else {
+        input.value = input.value.substring(0, start) + char + char + input.value.substring(end);
+        input.selectionStart = input.selectionEnd = start + char.length;
+      }
+      input.focus();
+      autoResizeReplyInput(input);
+    }
+
+    // ---- MEDIA UPLOAD & SEND ----
+    async function uploadToSupabaseStorage(file, phone) {
+      const cleanPhone = phone.replace('@s.whatsapp.net', '');
+      const ts = new Date().toISOString().replace(/[:.]/g, '-');
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const path = `${cleanPhone}/${ts}-${safeName}`;
+
+      const res = await fetch(`${SUPABASE_URL}/storage/v1/object/chat-media/${path}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+          'Content-Type': file.type
+        },
+        body: file
+      });
+      if (!res.ok) throw new Error(`Upload falhou: ${res.status}`);
+      return `${SUPABASE_URL}/storage/v1/object/public/chat-media/${path}`;
+    }
+
+    async function sendMediaViaEvolution(phone, mediaFile, caption) {
+      const cleanPhone = phone.replace('@s.whatsapp.net', '');
+      const isImage = mediaFile.category === 'image';
+      const isVideo = mediaFile.category === 'video';
+
+      let endpoint, bodyKey;
+      if (isImage) {
+        endpoint = 'sendMedia';
+        bodyKey = 'media';
+      } else if (isVideo) {
+        endpoint = 'sendMedia';
+        bodyKey = 'media';
+      } else {
+        endpoint = 'sendMedia';
+        bodyKey = 'media';
+      }
+
+      const body = {
+        number: cleanPhone,
+        mediatype: isImage ? 'image' : isVideo ? 'video' : 'document',
+        media: mediaFile.base64,
+        caption: caption || '',
+        fileName: mediaFile.name
+      };
+
+      const res = await fetch(`${EVO_API_URL}/message/${endpoint}/${encodeURIComponent(EVO_INSTANCE)}`, {
+        method: 'POST',
+        headers: { 'apikey': EVO_API_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) throw new Error(`Evolution API: ${res.status}`);
+      return res.json();
+    }
+
+    // ---- LIGHTBOX ----
+    function openLightbox(url) {
+      const lb = document.getElementById('conv-lightbox');
+      const img = document.getElementById('conv-lightbox-img');
+      if (lb && img) {
+        img.src = url;
+        lb.classList.remove('hidden');
+      }
+      refreshIcons();
+    }
+
+    function closeLightbox() {
+      document.getElementById('conv-lightbox')?.classList.add('hidden');
     }
 
     // ---- INIT ----
@@ -2311,7 +2693,7 @@
 
     async function initConvPolling() {
       try {
-        const msgs = await supabaseGet('conversations?select=phone,sender_name,message_text,direction,created_at&order=created_at.desc&limit=500');
+        const msgs = await supabaseGet('conversations?select=phone,sender_name,message_text,direction,created_at,message_type,media_url,media_mime_type,file_name&order=created_at.desc&limit=500');
         lastConvTimestamp = msgs.length ? msgs[0].created_at : null;
         lastConvTotalCount = msgs.filter(m => m.direction === 'inbound').length;
         allConversations = groupConversations(msgs);
