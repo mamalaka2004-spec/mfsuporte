@@ -2011,6 +2011,7 @@
     const EVO_API_URL = 'https://evo.mfmanagerfashion.net';
     const EVO_API_KEY = 'C0836A50FBC0-48D4-B5DA-61EE3BD79883';
     const EVO_INSTANCE = 'Suporte MF';
+    const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhyc3N3bGFpcGRjemhvY3dtdmJsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjcyMzUyNSwiZXhwIjoyMDg4Mjk5NTI1fQ.BLietVicaHMOg5b7RVD2B68OalKUfMzfRCti7XIbqBs';
 
     function showReplyBar() {
       const bar = document.getElementById('conv-reply-bar');
@@ -2088,7 +2089,24 @@
           })
         });
 
-        // 3. Clear input and refresh chat
+        // 3. Set Pause (same rule as workflow — 30min pause for AI)
+        const pausePhone = selectedConvPhone.replace('@s.whatsapp.net', '');
+        await fetch(`${SUPABASE_URL}/rest/v1/chat_memory`, {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_SERVICE_KEY,
+            'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({
+            session_id: `pause:${pausePhone}`,
+            role: 'pause',
+            content: new Date().toISOString()
+          })
+        });
+
+        // 4. Clear input and refresh chat
         input.value = '';
         input.style.height = 'auto';
         updateSendBtn();
