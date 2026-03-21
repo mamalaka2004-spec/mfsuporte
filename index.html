@@ -294,7 +294,8 @@
       <i data-lucide="list" class="w-3.5 h-3.5"></i>Lista <span class="tab-count ml-1.5 bg-[var(--border-color)] text-[var(--text-muted)] text-[10px] px-2 py-0.5 rounded-full font-semibold" id="count-list">0</span>
     </div>
     <div class="nav-tab flex items-center gap-1.5 px-5 py-3 text-[13px] font-medium text-[var(--text-muted)] cursor-pointer border-b-2 border-transparent select-none transition-all duration-200 hover:text-[var(--text-secondary)] hover:bg-[var(--glass)]" data-view="conversations" onclick="switchView('conversations')">
-      <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>Conversas
+      <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>Conversas <span class="tab-count ml-1.5 bg-[var(--border-color)] text-[var(--text-muted)] text-[10px] px-2 py-0.5 rounded-full font-semibold" id="count-conversations" style="display:none">0</span>
+      <span id="conv-new-badge" class="hidden ml-1 w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
     </div>
     <div class="nav-tab flex items-center gap-1.5 px-5 py-3 text-[13px] font-medium text-[var(--text-muted)] cursor-pointer border-b-2 border-transparent select-none transition-all duration-200 hover:text-[var(--text-secondary)] hover:bg-[var(--glass)]" data-view="reports" onclick="switchView('reports')">
       <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i>Relatórios
@@ -1681,11 +1682,16 @@
 
     function refreshIcons() { if (typeof lucide !== 'undefined') lucide.createIcons(); }
 
-    // ---- CONVERSATIONS ----
+    // ---- CONVERSATIONS (Enhanced with auto-refresh) ----
     const SUPABASE_URL = 'https://xrsswlaipdczhocwmvbl.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhyc3N3bGFpcGRjemhvY3dtdmJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MjM1MjUsImV4cCI6MjA4ODI5OTUyNX0.sSVShzG4DZJj9oBRhBplmYHHATix7jgxCLmkov2C6XE';
     let allConversations = [];
     let selectedConvPhone = null;
+    let convPollTimer = null;
+    let chatPollTimer = null;
+    let lastConvTimestamp = null;
+    let lastChatMsgCount = 0;
+    let convFirstLoad = true;
 
     async function supabaseGet(query) {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/${query}`, {
@@ -1695,27 +1701,119 @@
       return res.json();
     }
 
-    async function loadConversationList() {
-      const listEl = document.getElementById('conv-list');
-      listEl.innerHTML = `<div class="flex items-center justify-center h-32"><div class="animate-spin w-5 h-5 border-2 border-[var(--border-color)] border-t-indigo-500 rounded-full"></div></div>`;
+    function startConvPolling() {
+      stopConvPolling();
+      convPollTimer = setInterval(() => pollConversations(), 8000);
+    }
+
+    function stopConvPolling() {
+      if (convPollTimer) { clearInterval(convPollTimer); convPollTimer = null; }
+      if (chatPollTimer) { clearInterval(chatPollTimer); chatPollTimer = null; }
+    }
+
+    async function pollConversations() {
       try {
         const msgs = await supabaseGet('conversations?select=phone,sender_name,message_text,direction,created_at&order=created_at.desc&limit=500');
-        const grouped = {};
-        for (const m of msgs) {
-          if (!grouped[m.phone]) {
-            grouped[m.phone] = { phone: m.phone, name: m.sender_name || m.phone, lastMsg: m.message_text, lastAt: m.created_at, count: 0, direction: m.direction };
-          }
-          grouped[m.phone].count++;
-          if (m.direction === 'inbound' && m.sender_name && m.sender_name !== 'Suporte MF (IA)') {
-            grouped[m.phone].name = m.sender_name;
+        const newTimestamp = msgs.length ? msgs[0].created_at : null;
+
+        if (newTimestamp && newTimestamp !== lastConvTimestamp) {
+          lastConvTimestamp = newTimestamp;
+          const grouped = groupConversations(msgs);
+          const oldPhones = new Set(allConversations.map(c => c.phone));
+          allConversations = grouped;
+
+          // Check for new conversations or new messages
+          const hasNew = grouped.some(c => !oldPhones.has(c.phone)) || (newTimestamp !== lastConvTimestamp);
+          renderConversationList(getFilteredConvs());
+          updateConvCount();
+
+          // Show new message badge on tab if not viewing conversations
+          const activeView = document.querySelector('.nav-tab.active')?.dataset?.view;
+          if (activeView !== 'conversations') {
+            const badge = document.getElementById('conv-new-badge');
+            if (badge) badge.classList.remove('hidden');
           }
         }
-        allConversations = Object.values(grouped).sort((a, b) => new Date(b.lastAt) - new Date(a.lastAt));
+
+        // Also refresh active chat
+        if (selectedConvPhone) {
+          pollActiveChat();
+        }
+      } catch (e) { /* silent fail on poll */ }
+    }
+
+    async function pollActiveChat() {
+      if (!selectedConvPhone) return;
+      try {
+        const msgs = await supabaseGet(`conversations?phone=eq.${encodeURIComponent(selectedConvPhone)}&order=created_at.asc&limit=200`);
+        if (msgs.length !== lastChatMsgCount) {
+          const wasAtBottom = isScrolledToBottom();
+          renderChatMessages(msgs, true);
+          lastChatMsgCount = msgs.length;
+          if (wasAtBottom) {
+            const chatEl = document.getElementById('conv-chat-messages');
+            chatEl.scrollTop = chatEl.scrollHeight;
+          }
+        }
+      } catch (e) { /* silent */ }
+    }
+
+    function isScrolledToBottom() {
+      const el = document.getElementById('conv-chat-messages');
+      return el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    }
+
+    function groupConversations(msgs) {
+      const grouped = {};
+      for (const m of msgs) {
+        if (!grouped[m.phone]) {
+          grouped[m.phone] = { phone: m.phone, name: m.sender_name || m.phone, lastMsg: m.message_text, lastAt: m.created_at, count: 0, direction: m.direction };
+        }
+        grouped[m.phone].count++;
+        if (m.direction === 'inbound' && m.sender_name && m.sender_name !== 'Suporte MF (IA)') {
+          grouped[m.phone].name = m.sender_name;
+        }
+      }
+      return Object.values(grouped).sort((a, b) => new Date(b.lastAt) - new Date(a.lastAt));
+    }
+
+    function updateConvCount() {
+      const countEl = document.getElementById('count-conversations');
+      if (countEl && allConversations.length) {
+        countEl.textContent = allConversations.length;
+        countEl.style.display = '';
+      }
+    }
+
+    async function loadConversationList() {
+      const listEl = document.getElementById('conv-list');
+      if (convFirstLoad) {
+        listEl.innerHTML = `<div class="flex items-center justify-center h-32"><div class="animate-spin w-5 h-5 border-2 border-[var(--border-color)] border-t-indigo-500 rounded-full"></div></div>`;
+      }
+      try {
+        const msgs = await supabaseGet('conversations?select=phone,sender_name,message_text,direction,created_at&order=created_at.desc&limit=500');
+        lastConvTimestamp = msgs.length ? msgs[0].created_at : null;
+        allConversations = groupConversations(msgs);
         renderConversationList(allConversations);
+        updateConvCount();
+        convFirstLoad = false;
+
+        // Hide new badge
+        const badge = document.getElementById('conv-new-badge');
+        if (badge) badge.classList.add('hidden');
+
+        // Start polling
+        startConvPolling();
       } catch (err) {
         listEl.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center px-6"><i data-lucide="alert-circle" class="w-8 h-8 text-red-500 opacity-50 mb-2"></i><div class="text-[13px] text-red-400">${err.message}</div></div>`;
         refreshIcons();
       }
+    }
+
+    function getFilteredConvs() {
+      const q = (document.getElementById('conv-search')?.value || '').toLowerCase();
+      if (!q) return allConversations;
+      return allConversations.filter(c => (c.name || '').toLowerCase().includes(q) || c.phone.includes(q));
     }
 
     function renderConversationList(convs) {
@@ -1731,8 +1829,11 @@
         const isActive = c.phone === selectedConvPhone;
         const preview = (c.lastMsg || '').substring(0, 55) + ((c.lastMsg || '').length > 55 ? '...' : '');
         const dirIcon = c.direction === 'outbound' ? '<span class="text-indigo-400 mr-0.5">&#8618;</span>' : '';
-        return `<div class="flex items-start gap-3 px-4 py-3 cursor-pointer border-b border-[var(--border-color)]/50 transition-all duration-150 hover:bg-[var(--glass)] ${isActive ? 'bg-indigo-500/10 border-l-2 border-l-indigo-500' : 'border-l-2 border-l-transparent'}" onclick="openConversation('${c.phone}')">
-          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-[12px] font-semibold flex-shrink-0">${initials}</div>
+        return `<div class="conv-item flex items-start gap-3 px-4 py-3 cursor-pointer border-b border-[var(--border-color)]/50 transition-all duration-150 hover:bg-[var(--glass)] ${isActive ? 'bg-indigo-500/10 border-l-2 border-l-indigo-500' : 'border-l-2 border-l-transparent'}" onclick="openConversation('${c.phone}')">
+          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-[12px] font-semibold flex-shrink-0 relative">
+            ${initials}
+            <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-[var(--surface)]"></span>
+          </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center justify-between gap-2">
               <div class="text-[13px] font-semibold text-[var(--text-primary)] truncate">${escapeHtml(c.name || c.phone)}</div>
@@ -1741,21 +1842,20 @@
             <div class="text-[12px] text-[var(--text-muted)] truncate mt-0.5 leading-relaxed">${dirIcon}${escapeHtml(preview)}</div>
             <div class="text-[10px] text-[var(--text-muted)] opacity-50 mt-0.5 font-mono">${formatPhoneDisplay(c.phone)}</div>
           </div>
-          <div class="flex-shrink-0 mt-1"><span class="text-[10px] bg-[var(--surface-2)] text-[var(--text-muted)] px-1.5 py-0.5 rounded-full">${c.count}</span></div>
+          <div class="flex-shrink-0 mt-1"><span class="text-[10px] bg-indigo-500/15 text-indigo-400 px-1.5 py-0.5 rounded-full font-medium">${c.count}</span></div>
         </div>`;
       }).join('');
       refreshIcons();
     }
 
     function filterConversationList() {
-      const q = (document.getElementById('conv-search').value || '').toLowerCase();
-      if (!q) return renderConversationList(allConversations);
-      renderConversationList(allConversations.filter(c => (c.name || '').toLowerCase().includes(q) || c.phone.includes(q)));
+      renderConversationList(getFilteredConvs());
     }
 
     async function openConversation(phone) {
       selectedConvPhone = phone;
-      renderConversationList(document.getElementById('conv-search').value ? allConversations.filter(c => (c.name || '').toLowerCase().includes(document.getElementById('conv-search').value.toLowerCase()) || c.phone.includes(document.getElementById('conv-search').value)) : allConversations);
+      lastChatMsgCount = 0;
+      renderConversationList(getFilteredConvs());
 
       const chatEl = document.getElementById('conv-chat-messages');
       const headerEl = document.getElementById('conv-chat-header');
@@ -1763,29 +1863,40 @@
 
       const conv = allConversations.find(c => c.phone === phone);
       const displayName = conv ? conv.name : phone;
+      const initials = (displayName || '?').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
       headerEl.innerHTML = `
         <div class="flex items-center gap-3 flex-1">
-          <div class="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-[11px] font-semibold">${(displayName || '?').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()}</div>
+          <div class="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-[11px] font-semibold relative">
+            ${initials}
+            <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-[var(--surface-2)]"></span>
+          </div>
           <div>
             <div class="text-[14px] font-semibold text-[var(--text-primary)]">${escapeHtml(displayName)}</div>
-            <div class="text-[11px] text-[var(--text-muted)] font-mono">${formatPhoneDisplay(phone)}</div>
+            <div class="flex items-center gap-2">
+              <span class="text-[11px] text-[var(--text-muted)] font-mono">${formatPhoneDisplay(phone)}</span>
+              <span class="inline-flex items-center gap-0.5 text-[9px] text-green-400"><span class="w-1.5 h-1.5 rounded-full bg-green-500 inline-block"></span> ao vivo</span>
+            </div>
           </div>
         </div>
         <div class="flex items-center gap-2">
           <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-400 bg-indigo-500/10 px-2 py-1 rounded-full"><i data-lucide="bot" class="w-3 h-3"></i> IA N1</span>
-          <button onclick="loadConversationList()" class="w-8 h-8 rounded-lg bg-[var(--glass)] border border-[var(--border-color)] text-[var(--text-muted)] flex items-center justify-center cursor-pointer hover:text-[var(--text-primary)] hover:bg-[var(--glass-hover)] transition-all duration-150" title="Atualizar"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i></button>
+          <div id="conv-poll-indicator" class="flex items-center gap-1 text-[10px] text-[var(--text-muted)] opacity-60" title="Atualização automática a cada 8s">
+            <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+          </div>
+          <button onclick="loadConversationList(); if(selectedConvPhone) openConversation(selectedConvPhone);" class="w-8 h-8 rounded-lg bg-[var(--glass)] border border-[var(--border-color)] text-[var(--text-muted)] flex items-center justify-center cursor-pointer hover:text-[var(--text-primary)] hover:bg-[var(--glass-hover)] transition-all duration-150" title="Atualizar"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i></button>
         </div>`;
       refreshIcons();
 
       try {
         const msgs = await supabaseGet(`conversations?phone=eq.${encodeURIComponent(phone)}&order=created_at.asc&limit=200`);
-        renderChatMessages(msgs);
+        lastChatMsgCount = msgs.length;
+        renderChatMessages(msgs, false);
       } catch (err) {
         chatEl.innerHTML = `<div class="flex items-center justify-center h-full text-red-400 text-[13px]">${err.message}</div>`;
       }
     }
 
-    function renderChatMessages(msgs) {
+    function renderChatMessages(msgs, isUpdate) {
       const chatEl = document.getElementById('conv-chat-messages');
       if (!msgs.length) {
         chatEl.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center"><div class="text-[13px] text-[var(--text-muted)]">Nenhuma mensagem encontrada</div></div>`;
@@ -1794,32 +1905,45 @@
 
       let lastDate = '';
       let html = '';
-      for (const m of msgs) {
+      for (let i = 0; i < msgs.length; i++) {
+        const m = msgs[i];
         const msgDate = new Date(m.created_at).toLocaleDateString('pt-BR');
         if (msgDate !== lastDate) {
           lastDate = msgDate;
-          html += `<div class="flex items-center gap-3 my-4"><div class="flex-1 h-px bg-[var(--border-color)]"></div><span class="text-[10px] text-[var(--text-muted)] font-medium px-2">${msgDate}</span><div class="flex-1 h-px bg-[var(--border-color)]"></div></div>`;
+          const isToday = msgDate === new Date().toLocaleDateString('pt-BR');
+          const dateLabel = isToday ? 'Hoje' : msgDate;
+          html += `<div class="flex items-center gap-3 my-4"><div class="flex-1 h-px bg-[var(--border-color)]"></div><span class="text-[10px] text-[var(--text-muted)] font-medium px-3 py-0.5 bg-[var(--surface-2)] rounded-full border border-[var(--border-color)]">${dateLabel}</span><div class="flex-1 h-px bg-[var(--border-color)]"></div></div>`;
         }
         const isOut = m.direction === 'outbound';
         const time = new Date(m.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         const isAudio = m.message_type === 'audioMessage';
         const audioIcon = isAudio ? '<i data-lucide="mic" class="w-3 h-3 inline-block mr-1 opacity-60"></i>' : '';
+        const isNew = isUpdate && i >= msgs.length - 3;
+        const animClass = isNew ? 'animate-slide-up' : '';
+
+        // Check if next message is same direction (for grouping)
+        const nextMsg = msgs[i + 1];
+        const isGrouped = nextMsg && nextMsg.direction === m.direction && (new Date(nextMsg.created_at) - new Date(m.created_at)) < 60000;
+        const spacing = isGrouped ? 'mb-0.5' : 'mb-2';
 
         if (isOut) {
-          html += `<div class="flex justify-end"><div class="max-w-[75%] px-3.5 py-2.5 rounded-2xl rounded-br-md bg-gradient-to-r from-indigo-500/15 to-indigo-600/15 border border-indigo-500/20">
+          html += `<div class="flex justify-end ${spacing} ${animClass}"><div class="max-w-[75%] px-3.5 py-2 rounded-2xl ${isGrouped ? 'rounded-r-lg' : 'rounded-br-md'} bg-gradient-to-r from-indigo-500/15 to-indigo-600/15 border border-indigo-500/20">
             <div class="text-[13px] text-[var(--text-primary)] leading-relaxed whitespace-pre-wrap break-words">${escapeHtml(m.message_text)}</div>
-            <div class="flex items-center justify-end gap-1.5 mt-1"><span class="text-[10px] text-indigo-400 font-medium">IA</span><span class="text-[10px] text-[var(--text-muted)]">${time}</span></div>
+            <div class="flex items-center justify-end gap-1.5 mt-0.5"><span class="text-[10px] text-indigo-400 font-medium">IA</span><span class="text-[10px] text-[var(--text-muted)]">${time}</span></div>
           </div></div>`;
         } else {
-          html += `<div class="flex justify-start"><div class="max-w-[75%] px-3.5 py-2.5 rounded-2xl rounded-bl-md bg-[var(--surface-2)] border border-[var(--border-color)]">
-            <div class="text-[11px] font-semibold text-indigo-400 mb-1">${escapeHtml(m.sender_name || 'Cliente')}</div>
+          // Only show sender name on first message of a group
+          const prevMsg = msgs[i - 1];
+          const showName = !prevMsg || prevMsg.direction !== 'inbound' || (new Date(m.created_at) - new Date(prevMsg.created_at)) > 60000;
+          html += `<div class="flex justify-start ${spacing} ${animClass}"><div class="max-w-[75%] px-3.5 py-2 rounded-2xl ${isGrouped ? 'rounded-l-lg' : 'rounded-bl-md'} bg-[var(--surface-2)] border border-[var(--border-color)]">
+            ${showName ? `<div class="text-[11px] font-semibold text-indigo-400 mb-0.5">${escapeHtml(m.sender_name || 'Cliente')}</div>` : ''}
             <div class="text-[13px] text-[var(--text-primary)] leading-relaxed whitespace-pre-wrap break-words">${audioIcon}${escapeHtml(m.message_text)}</div>
-            <div class="text-[10px] text-[var(--text-muted)] mt-1">${time}</div>
+            <div class="text-[10px] text-[var(--text-muted)] mt-0.5">${time}</div>
           </div></div>`;
         }
       }
       chatEl.innerHTML = html;
-      chatEl.scrollTop = chatEl.scrollHeight;
+      if (!isUpdate) chatEl.scrollTop = chatEl.scrollHeight;
       refreshIcons();
     }
 
