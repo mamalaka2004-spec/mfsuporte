@@ -2125,7 +2125,7 @@
           </div></div>`;
         } else {
           const showName = isFirstInGroup;
-          const audioEl = isAudio ? `<div class="flex items-center gap-2 mb-1">
+          const audioEl = (isAudio && !hasMedia) ? `<div class="flex items-center gap-2 mb-1">
             <div class="w-8 h-8 rounded-full bg-indigo-500/15 flex items-center justify-center flex-shrink-0"><i data-lucide="mic" class="w-3.5 h-3.5 text-indigo-400"></i></div>
             <div class="flex-1 h-1 rounded-full bg-[var(--border-color)] relative"><div class="h-full w-3/4 rounded-full bg-indigo-400/40"></div></div>
             <span class="text-[10px] text-[var(--text-muted)] tabular-nums flex-shrink-0">0:00</span>
