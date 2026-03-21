@@ -2374,7 +2374,7 @@
 
           // 1b. Send media via Evolution API
           statusEl.innerHTML = '<div class="animate-spin w-3 h-3 border-[1.5px] border-[var(--border-color)] border-t-indigo-500 rounded-full"></div> Enviando via WhatsApp...';
-          await sendMediaViaEvolution(selectedConvPhone, pendingFile, text);
+          await sendMediaViaEvolution(selectedConvPhone, pendingFile, text, mediaUrl);
           if (!msgText) msgText = `[${pendingFile.name}]`;
         } else {
           // 1. Send text via Evolution API
@@ -2609,32 +2609,20 @@
       return `${SUPABASE_URL}/storage/v1/object/public/chat-media/${path}`;
     }
 
-    async function sendMediaViaEvolution(phone, mediaFile, caption) {
+    async function sendMediaViaEvolution(phone, mediaFile, caption, publicUrl) {
       const cleanPhone = phone.replace('@s.whatsapp.net', '');
       const isImage = mediaFile.category === 'image';
       const isVideo = mediaFile.category === 'video';
 
-      let endpoint, bodyKey;
-      if (isImage) {
-        endpoint = 'sendMedia';
-        bodyKey = 'media';
-      } else if (isVideo) {
-        endpoint = 'sendMedia';
-        bodyKey = 'media';
-      } else {
-        endpoint = 'sendMedia';
-        bodyKey = 'media';
-      }
-
       const body = {
         number: cleanPhone,
         mediatype: isImage ? 'image' : isVideo ? 'video' : 'document',
-        media: mediaFile.base64,
+        media: publicUrl,
         caption: caption || '',
         fileName: mediaFile.name
       };
 
-      const res = await fetch(`${EVO_API_URL}/message/${endpoint}/${encodeURIComponent(EVO_INSTANCE)}`, {
+      const res = await fetch(`${EVO_API_URL}/message/sendMedia/${encodeURIComponent(EVO_INSTANCE)}`, {
         method: 'POST',
         headers: { 'apikey': EVO_API_KEY, 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
