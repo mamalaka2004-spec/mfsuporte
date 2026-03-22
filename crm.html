@@ -10,6 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+  <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -308,6 +309,247 @@
       .detail-panel { width: 100% !important; right: -100% !important; }
       .detail-panel.active { right: 0 !important; }
     }
+
+    /* ── Audio Waveform Player ── */
+    .audio-player {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      min-width: 220px;
+      max-width: 280px;
+    }
+    .audio-player .play-btn {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: rgba(99,102,241,0.2);
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all 150ms;
+      color: var(--accent-text);
+    }
+    .audio-player .play-btn:hover { background: rgba(99,102,241,0.3); }
+    .audio-player .waveform-wrap { flex: 1; min-width: 0; height: 32px; }
+    .audio-player .audio-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+    .audio-player .audio-duration {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .audio-player .speed-btn {
+      font-size: 10px;
+      padding: 1px 5px;
+      border-radius: 8px;
+      background: var(--glass);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 150ms;
+    }
+    .audio-player .speed-btn:hover { color: var(--text-primary); background: var(--glass-hover); }
+
+    /* ── Video Thumbnail ── */
+    .video-bubble {
+      position: relative;
+      display: inline-block;
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      max-width: 280px;
+      width: 100%;
+    }
+    .video-bubble .video-thumb {
+      display: block;
+      width: 100%;
+      border-radius: 12px;
+      background: var(--surface-3);
+      min-height: 120px;
+      object-fit: cover;
+    }
+    .video-bubble .video-play-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.15);
+      transition: background 150ms;
+    }
+    .video-bubble:hover .video-play-overlay { background: rgba(0,0,0,0.25); }
+    .video-bubble .video-duration-badge {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-variant-numeric: tabular-nums;
+      backdrop-filter: blur(4px);
+    }
+    .video-bubble .video-camera-icon {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: rgba(0,0,0,0.5);
+      color: #fff;
+      padding: 3px 6px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      backdrop-filter: blur(4px);
+    }
+
+    /* ── Video Player Modal ── */
+    #video-player-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(8px);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #video-player-modal video {
+      max-width: 90vw;
+      max-height: 85vh;
+      border-radius: 12px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+    }
+
+    /* ── Drag & Drop Overlay ── */
+    .drop-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(99,102,241,0.08);
+      backdrop-filter: blur(3px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      border: 2.5px dashed rgba(99,102,241,0.5);
+      border-radius: 16px;
+      pointer-events: none;
+    }
+    .drop-overlay.visible { display: flex; }
+    .drop-overlay .drop-content {
+      text-align: center;
+      color: var(--accent-text);
+    }
+    .drop-overlay .drop-content i { margin-bottom: 8px; }
+
+    /* ── Voice Recording UI ── */
+    .recording-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border-top: 1px solid var(--border-color);
+    }
+    .recording-bar .rec-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #ef4444;
+      animation: recPulse 1s ease infinite;
+    }
+    @keyframes recPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.3); }
+    }
+    .recording-bar .rec-timer {
+      font-size: 14px;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+    .recording-bar .rec-cancel {
+      font-size: 12px;
+      color: var(--text-muted);
+      cursor: pointer;
+      margin-left: auto;
+    }
+    .recording-bar .rec-cancel:hover { color: #ef4444; }
+    .recording-bar .rec-send {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: #ef4444;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: white;
+      transition: all 150ms;
+    }
+    .recording-bar .rec-send:hover { background: #dc2626; transform: scale(1.05); }
+
+    /* ── Link Preview ── */
+    .link-preview {
+      border-left: 3px solid var(--accent-text);
+      border-radius: 0 8px 8px 0;
+      background: rgba(0,0,0,0.06);
+      overflow: hidden;
+      max-width: 280px;
+      cursor: pointer;
+      margin-bottom: 4px;
+      transition: background 150ms;
+    }
+    .link-preview:hover { background: rgba(0,0,0,0.1); }
+    .dark .link-preview { background: rgba(255,255,255,0.03); }
+    .dark .link-preview:hover { background: rgba(255,255,255,0.06); }
+    .link-preview .lp-image {
+      width: 100%;
+      height: 110px;
+      background-size: cover;
+      background-position: center;
+      background-color: var(--surface-3);
+    }
+    .link-preview .lp-body { padding: 8px 10px; }
+    .link-preview .lp-domain {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
+      color: var(--accent-text);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .link-preview .lp-favicon {
+      width: 14px; height: 14px;
+      border-radius: 2px;
+    }
+    .link-preview .lp-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 3px 0 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .link-preview .lp-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
   </style>
 </head>
 <body class="min-h-screen">
@@ -476,6 +718,9 @@
               </button>
               <button onclick="document.getElementById('conv-file-input-doc').click()" class="w-8 h-8 rounded-xl text-[var(--text-muted)] flex items-center justify-center cursor-pointer hover:text-[var(--text-primary)] hover:bg-[var(--glass)] transition-all duration-150" title="Enviar arquivo" aria-label="Enviar arquivo">
                 <i data-lucide="paperclip" class="w-4 h-4"></i>
+              </button>
+              <button onclick="ChatModule.startRecording()" class="w-8 h-8 rounded-xl text-[var(--text-muted)] flex items-center justify-center cursor-pointer hover:text-red-400 hover:bg-red-500/10 transition-all duration-150" title="Gravar audio" aria-label="Gravar audio">
+                <i data-lucide="mic" class="w-4 h-4"></i>
               </button>
               <button onclick="ChatModule.toggleEmojiPicker()" class="w-8 h-8 rounded-xl text-[var(--text-muted)] flex items-center justify-center cursor-pointer hover:text-[var(--text-primary)] hover:bg-[var(--glass)] transition-all duration-150" title="Emojis" aria-label="Emojis">
                 <i data-lucide="smile" class="w-4 h-4"></i>
@@ -2258,6 +2503,7 @@
           const msgs = await ApiService.supabaseGet(`conversations?phone=eq.${encodeURIComponent(phone)}&order=created_at.asc&limit=200`);
           Store.state.lastChatMsgCount = msgs.length;
           renderMessages(msgs, false);
+          initDragDrop();
           checkPauseStatus(phone);
         } catch (err) {
           chatEl.innerHTML = `<div class="flex items-center justify-center h-full text-red-400 text-[13px]">${err.message}</div>`;
@@ -2270,26 +2516,75 @@
         if (!m.media_url) return '';
         const mime = m.media_mime_type || '';
         const fname = m.file_name || 'arquivo';
+        const url = escapeHtml(m.media_url);
+
+        // IMAGE — clickable with lightbox
         if (mime.startsWith('image/')) {
-          return `<img src="${escapeHtml(m.media_url)}" alt="${escapeHtml(fname)}" class="max-w-[280px] w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity mb-1" onclick="ChatModule.openLightbox('${escapeHtml(m.media_url)}')" loading="lazy">`;
+          return `<img src="${url}" alt="${escapeHtml(fname)}" class="max-w-[280px] w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity mb-1" onclick="ChatModule.openLightbox('${url}')" loading="lazy">`;
         }
+
+        // VIDEO — thumbnail with play overlay (WhatsApp-style)
         if (mime.startsWith('video/')) {
-          return `<video src="${escapeHtml(m.media_url)}" controls class="max-w-[280px] w-full rounded-lg mb-1" preload="metadata"></video>`;
+          const vidId = 'vid-' + Math.random().toString(36).substr(2, 8);
+          return `<div class="video-bubble mb-1" onclick="ChatModule.openVideoPlayer('${url}')">
+            <video id="${vidId}" src="${url}" class="video-thumb" preload="metadata" muted></video>
+            <div class="video-play-overlay">
+              <svg viewBox="0 0 48 48" width="48" height="48">
+                <circle cx="24" cy="24" r="24" fill="rgba(0,0,0,0.5)"/>
+                <polygon points="19,15 19,33 35,24" fill="white"/>
+              </svg>
+            </div>
+            <div class="video-camera-icon"><i data-lucide="video" class="w-3 h-3"></i></div>
+            <div class="video-duration-badge" id="dur-${vidId}">0:00</div>
+          </div>
+          <script>
+            (function(){
+              var v=document.getElementById('${vidId}');
+              if(v) v.addEventListener('loadedmetadata',function(){
+                var d=Math.floor(v.duration), m=Math.floor(d/60), s=d%60;
+                var el=document.getElementById('dur-${vidId}');
+                if(el) el.textContent=m+':'+(s<10?'0':'')+s;
+              });
+            })();
+          </script>`;
         }
+
+        // AUDIO — WaveSurfer.js waveform player (WhatsApp-style)
         if (mime.startsWith('audio/')) {
-          return `<audio src="${escapeHtml(m.media_url)}" controls class="w-full max-w-[260px] mb-1" preload="metadata"></audio>`;
+          const audioId = 'aud-' + Math.random().toString(36).substr(2, 8);
+          return `<div class="audio-player" id="${audioId}" data-src="${url}">
+            <button class="play-btn" onclick="ChatModule.toggleAudioPlay('${audioId}')">
+              <i data-lucide="play" class="w-4 h-4"></i>
+            </button>
+            <div class="waveform-wrap" id="wave-${audioId}"></div>
+            <div class="audio-meta">
+              <span class="audio-duration" id="time-${audioId}">0:00</span>
+              <button class="speed-btn" onclick="ChatModule.cycleAudioSpeed('${audioId}')">1x</button>
+            </div>
+          </div>`;
         }
-        const ext = fname.split('.').pop()?.toUpperCase() || 'FILE';
-        const iconColor = mime === 'application/pdf' ? 'text-red-400' : 'text-blue-400';
-        return `<a href="${escapeHtml(m.media_url)}" target="_blank" rel="noopener" class="flex items-center gap-2.5 p-2.5 rounded-lg bg-black/10 hover:bg-black/15 transition-colors mb-1 no-underline">
-          <div class="w-9 h-9 rounded-lg bg-black/10 flex items-center justify-center flex-shrink-0">
-            <i data-lucide="file-text" class="w-4 h-4 ${iconColor}"></i>
+
+        // DOCUMENT — file card with type-specific icon
+        const ext = fname.split('.').pop()?.toLowerCase() || 'file';
+        const extUp = ext.toUpperCase();
+        let iconName = 'file-text';
+        let iconColor = 'text-blue-400';
+        if (ext === 'pdf') { iconName = 'file-text'; iconColor = 'text-red-400'; }
+        else if (['doc','docx'].includes(ext)) { iconName = 'file-text'; iconColor = 'text-blue-500'; }
+        else if (['xls','xlsx','csv'].includes(ext)) { iconName = 'table'; iconColor = 'text-emerald-400'; }
+        else if (['ppt','pptx'].includes(ext)) { iconName = 'presentation'; iconColor = 'text-orange-400'; }
+        else if (['zip','rar','7z','tar','gz'].includes(ext)) { iconName = 'archive'; iconColor = 'text-yellow-400'; }
+
+        const sizeStr = m.file_size ? Helpers.formatFileSize(m.file_size) : extUp;
+        return `<a href="${url}" target="_blank" rel="noopener" download="${escapeHtml(fname)}" class="flex items-center gap-2.5 p-2.5 rounded-lg bg-black/10 hover:bg-black/15 transition-colors mb-1 no-underline group">
+          <div class="w-10 h-10 rounded-lg bg-black/10 flex items-center justify-center flex-shrink-0">
+            <i data-lucide="${iconName}" class="w-4.5 h-4.5 ${iconColor}"></i>
           </div>
           <div class="flex-1 min-w-0">
             <div class="text-[12px] text-[var(--text-primary)] font-medium truncate">${escapeHtml(fname)}</div>
-            <div class="text-[10px] text-[var(--text-muted)]">${ext}</div>
+            <div class="text-[10px] text-[var(--text-muted)]">${sizeStr}</div>
           </div>
-          <i data-lucide="download" class="w-3.5 h-3.5 text-[var(--text-muted)] flex-shrink-0"></i>
+          <i data-lucide="download" class="w-4 h-4 text-[var(--text-muted)] flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"></i>
         </a>`;
       }
 
@@ -2370,10 +2665,10 @@
             </div></div>`;
           } else {
             const showName = isFirstInGroup;
-            const audioEl = (isAudio && !hasMedia) ? `<div class="flex items-center gap-2 mb-1">
-              <div class="w-8 h-8 rounded-full bg-indigo-500/15 flex items-center justify-center flex-shrink-0"><i data-lucide="mic" class="w-3.5 h-3.5 text-indigo-400"></i></div>
-              <div class="flex-1 h-1 rounded-full bg-[var(--border-color)] relative"><div class="h-full w-3/4 rounded-full bg-indigo-400/40"></div></div>
-              <span class="text-[10px] text-[var(--text-muted)] tabular-nums flex-shrink-0">0:00</span>
+            const audioEl = (isAudio && !hasMedia) ? `<div class="audio-player" style="opacity:0.5;pointer-events:none">
+              <button class="play-btn"><i data-lucide="play" class="w-4 h-4"></i></button>
+              <div class="waveform-wrap" style="display:flex;align-items:center;gap:1px">${Array.from({length:30},()=>'<div style="width:2.5px;height:'+Math.max(4,Math.random()*24)+'px;border-radius:2px;background:rgba(161,161,170,0.4)"></div>').join('')}</div>
+              <div class="audio-meta"><span class="audio-duration">0:00</span></div>
             </div>` : '';
             const padding = hasMedia ? mediaPadding : 'px-3.5 py-2';
 
@@ -2392,6 +2687,23 @@
         chatEl.innerHTML = html;
         if (!isUpdate) chatEl.scrollTop = chatEl.scrollHeight;
         refreshIcons();
+
+        // Initialize WaveSurfer audio players
+        setTimeout(() => initAudioPlayers(), 100);
+
+        // Fetch link previews for URLs in messages
+        document.querySelectorAll('#conv-chat-messages a[href^="http"]:not([data-lp])').forEach(async (link) => {
+          if (link.closest('.link-preview') || link.closest('.audio-player') || link.closest('.video-bubble')) return;
+          const url = link.href;
+          link.setAttribute('data-lp', '1');
+          const preview = await fetchLinkPreview(url);
+          if (preview && preview.title) {
+            const previewHtml = renderLinkPreview(url, preview);
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = previewHtml;
+            link.parentElement?.insertBefore(wrapper.firstElementChild, link.nextSibling);
+          }
+        });
       }
 
       // ---- Pause ----
@@ -2742,13 +3054,363 @@
         document.getElementById('conv-lightbox')?.classList.add('hidden');
       }
 
+      // ---- Audio Waveform Players (WaveSurfer) ----
+      const audioPlayers = {};
+      const audioSpeeds = [1, 1.5, 2];
+
+      function initAudioPlayers() {
+        if (typeof WaveSurfer === 'undefined') return;
+        document.querySelectorAll('.audio-player:not([data-init])').forEach(el => {
+          const id = el.id;
+          const src = el.dataset.src;
+          if (!src || audioPlayers[id]) return;
+          el.setAttribute('data-init', '1');
+          const waveEl = document.getElementById('wave-' + id);
+          if (!waveEl) return;
+          try {
+            const ws = WaveSurfer.create({
+              container: waveEl,
+              waveColor: 'rgba(161,161,170,0.4)',
+              progressColor: '#818cf8',
+              height: 32,
+              barWidth: 2.5,
+              barGap: 1.5,
+              barRadius: 2,
+              url: src,
+              backend: 'WebAudio',
+              normalize: true,
+              cursorWidth: 0,
+            });
+            const fmt = s => { const m = Math.floor(s/60); const sec = Math.floor(s%60); return m + ':' + (sec<10?'0':'') + sec; };
+            const timeEl = document.getElementById('time-' + id);
+            ws.on('ready', () => { if (timeEl) timeEl.textContent = fmt(ws.getDuration()); });
+            ws.on('audioprocess', t => { if (timeEl) timeEl.textContent = fmt(t); });
+            ws.on('finish', () => {
+              const btn = el.querySelector('.play-btn');
+              if (btn) btn.innerHTML = '<i data-lucide="play" class="w-4 h-4"></i>';
+              if (timeEl) timeEl.textContent = fmt(ws.getDuration());
+              refreshIcons();
+            });
+            audioPlayers[id] = { ws, speedIdx: 0 };
+          } catch(e) { console.warn('[Audio] WaveSurfer init failed:', e); }
+        });
+      }
+
+      function toggleAudioPlay(id) {
+        const p = audioPlayers[id];
+        if (!p) { initAudioPlayers(); return; }
+        // Pause any other playing audio
+        Object.entries(audioPlayers).forEach(([k, v]) => {
+          if (k !== id && v.ws.isPlaying()) {
+            v.ws.pause();
+            const otherBtn = document.querySelector('#' + k + ' .play-btn');
+            if (otherBtn) { otherBtn.innerHTML = '<i data-lucide="play" class="w-4 h-4"></i>'; }
+          }
+        });
+        p.ws.playPause();
+        const btn = document.querySelector('#' + id + ' .play-btn');
+        if (btn) {
+          btn.innerHTML = p.ws.isPlaying()
+            ? '<i data-lucide="pause" class="w-4 h-4"></i>'
+            : '<i data-lucide="play" class="w-4 h-4"></i>';
+        }
+        refreshIcons();
+      }
+
+      function cycleAudioSpeed(id) {
+        const p = audioPlayers[id];
+        if (!p) return;
+        p.speedIdx = (p.speedIdx + 1) % audioSpeeds.length;
+        p.ws.setPlaybackRate(audioSpeeds[p.speedIdx]);
+        const btn = document.querySelector('#' + id + ' .speed-btn');
+        if (btn) btn.textContent = audioSpeeds[p.speedIdx] + 'x';
+      }
+
+      // ---- Video Player Modal ----
+      function openVideoPlayer(url) {
+        let modal = document.getElementById('video-player-modal');
+        if (!modal) {
+          modal = document.createElement('div');
+          modal.id = 'video-player-modal';
+          modal.className = 'hidden';
+          modal.innerHTML = `
+            <video controls autoplay class="max-w-[90vw] max-h-[85vh] rounded-xl shadow-2xl"></video>
+            <button class="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-all" aria-label="Fechar">
+              <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+          `;
+          modal.addEventListener('click', (e) => {
+            if (e.target === modal || e.target.closest('button')) {
+              const v = modal.querySelector('video');
+              if (v) { v.pause(); v.src = ''; }
+              modal.classList.add('hidden');
+            }
+          });
+          document.body.appendChild(modal);
+        }
+        const video = modal.querySelector('video');
+        video.src = url;
+        modal.classList.remove('hidden');
+        refreshIcons();
+      }
+
+      // ---- Voice Recording (MediaRecorder) ----
+      let voiceRecorder = null;
+      let voiceStream = null;
+      let voiceChunks = [];
+      let voiceTimer = null;
+      let voiceStartTime = null;
+
+      function getMimeType() {
+        const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4'];
+        return types.find(t => MediaRecorder.isTypeSupported(t)) || '';
+      }
+
+      async function startRecording() {
+        try {
+          voiceStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const mimeType = getMimeType();
+          voiceRecorder = new MediaRecorder(voiceStream, mimeType ? { mimeType } : {});
+          voiceChunks = [];
+          voiceRecorder.addEventListener('dataavailable', e => { if (e.data.size > 0) voiceChunks.push(e.data); });
+          voiceRecorder.addEventListener('stop', () => {
+            const blob = new Blob(voiceChunks, { type: voiceRecorder.mimeType });
+            handleVoiceRecorded(blob, voiceRecorder.mimeType);
+            voiceStream?.getTracks().forEach(t => t.stop());
+          });
+          voiceRecorder.start(100);
+          voiceStartTime = Date.now();
+          showRecordingUI();
+          voiceTimer = setInterval(updateRecordingTimer, 500);
+        } catch (err) {
+          showToast('Microfone negado: ' + err.message, 'error');
+        }
+      }
+
+      function stopRecording() {
+        clearInterval(voiceTimer);
+        if (voiceRecorder && voiceRecorder.state !== 'inactive') voiceRecorder.stop();
+        hideRecordingUI();
+      }
+
+      function cancelRecording() {
+        clearInterval(voiceTimer);
+        if (voiceRecorder) voiceRecorder.ondataavailable = null;
+        if (voiceRecorder && voiceRecorder.state !== 'inactive') voiceRecorder.stop();
+        if (voiceStream) voiceStream.getTracks().forEach(t => t.stop());
+        voiceChunks = [];
+        hideRecordingUI();
+      }
+
+      function showRecordingUI() {
+        const replyBar = document.getElementById('conv-reply-bar');
+        if (!replyBar) return;
+        let recBar = document.getElementById('conv-recording-bar');
+        if (!recBar) {
+          recBar = document.createElement('div');
+          recBar.id = 'conv-recording-bar';
+          recBar.className = 'recording-bar';
+          recBar.innerHTML = `
+            <div class="rec-dot"></div>
+            <span class="rec-timer">0:00</span>
+            <span class="rec-cancel" onclick="ChatModule.cancelRecording()">Cancelar</span>
+            <button class="rec-send" onclick="ChatModule.stopRecording()" title="Enviar audio">
+              <i data-lucide="send" class="w-4 h-4"></i>
+            </button>
+          `;
+          replyBar.parentElement.insertBefore(recBar, replyBar);
+        }
+        recBar.classList.remove('hidden');
+        replyBar.classList.add('hidden');
+        replyBar.classList.remove('flex');
+        refreshIcons();
+      }
+
+      function hideRecordingUI() {
+        const recBar = document.getElementById('conv-recording-bar');
+        if (recBar) recBar.classList.add('hidden');
+        showReplyBar();
+      }
+
+      function updateRecordingTimer() {
+        const el = document.querySelector('.rec-timer');
+        if (!el || !voiceStartTime) return;
+        const secs = Math.floor((Date.now() - voiceStartTime) / 1000);
+        const m = Math.floor(secs / 60);
+        const s = secs % 60;
+        el.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+      }
+
+      async function handleVoiceRecorded(blob, mimeType) {
+        if (blob.size < 1000) { showToast('Audio muito curto', 'error'); return; }
+        const ext = mimeType.includes('webm') ? 'webm' : mimeType.includes('ogg') ? 'ogg' : mimeType.includes('mp4') ? 'm4a' : 'webm';
+        const fileName = 'audio-' + new Date().toISOString().replace(/[:.]/g, '-') + '.' + ext;
+        const file = new File([blob], fileName, { type: mimeType });
+
+        const statusEl = document.getElementById('conv-send-status');
+        const phone = Store.state.selectedPhone;
+        if (!phone) return;
+
+        if (statusEl) {
+          statusEl.className = 'text-[11px] px-4 py-1.5 border-b border-[var(--border-color)]/50 text-[var(--text-muted)] flex items-center gap-1.5';
+          statusEl.innerHTML = '<div class="animate-spin w-3 h-3 border-[1.5px] border-[var(--border-color)] border-t-indigo-500 rounded-full"></div> Enviando audio...';
+          statusEl.classList.remove('hidden');
+        }
+
+        try {
+          const mediaUrl = await ApiService.uploadToSupabaseStorage(file, phone);
+          await ApiService.evolutionSendMedia(phone, { category: 'document', name: fileName }, '', mediaUrl);
+
+          await ApiService.supabasePost('conversations', {
+            phone: phone,
+            sender_name: 'Atendente CRM',
+            direction: 'outbound',
+            message_text: '[Audio]',
+            message_type: 'audioMessage',
+            media_url: mediaUrl,
+            media_mime_type: mimeType,
+            file_name: fileName,
+            created_at: new Date().toISOString()
+          });
+
+          await ApiService.supabasePost('chat_memory', {
+            session_id: 'pause:' + phone.replace('@s.whatsapp.net', ''),
+            role: 'pause',
+            content: new Date().toISOString()
+          }, true);
+
+          if (statusEl) {
+            statusEl.className = 'text-[11px] px-4 py-1.5 border-b border-[var(--border-color)]/50 text-emerald-400 flex items-center gap-1.5';
+            statusEl.innerHTML = '<svg class="w-3 h-3" viewBox="0 0 16 16" fill="none"><path d="M2 8.5L6 12.5L14 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Audio enviado · IA pausada por 30 min';
+            setTimeout(() => statusEl.classList.add('hidden'), 3000);
+          }
+
+          await pollActiveChat();
+          const chatEl = document.getElementById('conv-chat-messages');
+          if (chatEl) chatEl.scrollTop = chatEl.scrollHeight;
+          checkPauseStatus(phone);
+
+        } catch (err) {
+          if (statusEl) {
+            statusEl.className = 'text-[11px] px-4 py-1.5 border-b border-[var(--border-color)]/50 text-red-400 flex items-center gap-1.5';
+            statusEl.innerHTML = 'Erro: ' + err.message;
+            setTimeout(() => statusEl.classList.add('hidden'), 4000);
+          }
+        }
+      }
+
+      // ---- Drag & Drop ----
+      function initDragDrop() {
+        const chatArea = document.getElementById('conv-chat-messages');
+        if (!chatArea || chatArea.dataset.dropInit) return;
+        chatArea.dataset.dropInit = '1';
+
+        let dragCounter = 0;
+        let overlay = chatArea.querySelector('.drop-overlay');
+        if (!overlay) {
+          overlay = document.createElement('div');
+          overlay.className = 'drop-overlay';
+          overlay.innerHTML = '<div class="drop-content"><i data-lucide="upload-cloud" class="w-10 h-10 mx-auto mb-2"></i><div class="text-[14px] font-semibold">Solte para enviar</div><div class="text-[11px] opacity-60 mt-1">Imagens, videos, documentos</div></div>';
+          chatArea.style.position = 'relative';
+          chatArea.appendChild(overlay);
+          refreshIcons();
+        }
+
+        chatArea.addEventListener('dragenter', (e) => { e.preventDefault(); dragCounter++; overlay.classList.add('visible'); });
+        chatArea.addEventListener('dragover', (e) => { e.preventDefault(); });
+        chatArea.addEventListener('dragleave', () => { dragCounter--; if (dragCounter <= 0) { dragCounter = 0; overlay.classList.remove('visible'); } });
+        chatArea.addEventListener('drop', (e) => {
+          e.preventDefault();
+          dragCounter = 0;
+          overlay.classList.remove('visible');
+          const files = Array.from(e.dataTransfer?.files || []);
+          if (files.length > 0) handleDroppedFile(files[0]);
+        });
+      }
+
+      function handleDroppedFile(file) {
+        const maxSize = 50 * 1024 * 1024;
+        if (file.size > maxSize) { showToast('Arquivo muito grande (max 50MB)', 'error'); return; }
+        const isImage = file.type.startsWith('image/');
+        const isVideo = file.type.startsWith('video/');
+        const category = isImage ? 'image' : isVideo ? 'video' : 'document';
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          Store.state.pendingFile = {
+            file, category, base64: e.target.result, mimeType: file.type, name: file.name, size: file.size
+          };
+          const previewEl = document.getElementById('conv-file-preview');
+          const thumbEl = document.getElementById('conv-file-thumb');
+          const nameEl = document.getElementById('conv-file-name');
+          const sizeEl = document.getElementById('conv-file-size');
+          if (nameEl) nameEl.textContent = file.name;
+          if (sizeEl) sizeEl.textContent = Helpers.formatFileSize(file.size);
+          if (thumbEl) {
+            if (isImage) thumbEl.innerHTML = '<img src="' + e.target.result + '" class="w-full h-full object-cover" alt="Preview">';
+            else if (isVideo) thumbEl.innerHTML = '<i data-lucide="film" class="w-5 h-5 text-purple-400"></i>';
+            else thumbEl.innerHTML = '<i data-lucide="file" class="w-5 h-5 text-[var(--text-muted)]"></i>';
+          }
+          if (previewEl) previewEl.classList.remove('hidden');
+          refreshIcons();
+          updateSendBtn();
+          const inp = document.getElementById('conv-reply-input');
+          if (inp) inp.placeholder = 'Legenda (opcional)...';
+        };
+        reader.readAsDataURL(file);
+      }
+
+      // ---- Link Preview ----
+      const linkPreviewCache = {};
+
+      async function fetchLinkPreview(url) {
+        if (linkPreviewCache[url]) return linkPreviewCache[url];
+        try {
+          const hostname = new URL(url).hostname;
+          const favicon = 'https://www.google.com/s2/favicons?sz=32&domain=' + hostname;
+
+          const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
+          const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(5000) });
+          const data = await res.json();
+          const doc = new DOMParser().parseFromString(data.contents, 'text/html');
+
+          const preview = {
+            title: doc.querySelector('meta[property="og:title"]')?.content || doc.querySelector('title')?.textContent || hostname,
+            description: doc.querySelector('meta[property="og:description"]')?.content || doc.querySelector('meta[name="description"]')?.content || '',
+            image: doc.querySelector('meta[property="og:image"]')?.content || null,
+            domain: hostname,
+            favicon: favicon
+          };
+          linkPreviewCache[url] = preview;
+          return preview;
+        } catch {
+          const hostname = new URL(url).hostname;
+          return { title: hostname, description: '', image: null, domain: hostname, favicon: 'https://www.google.com/s2/favicons?sz=32&domain=' + hostname };
+        }
+      }
+
+      function renderLinkPreview(url, preview) {
+        const imageHtml = preview.image ? `<div class="lp-image" style="background-image: url('${escapeHtml(preview.image)}')"></div>` : '';
+        const descHtml = preview.description ? `<div class="lp-desc">${escapeHtml(preview.description)}</div>` : '';
+        return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener" class="link-preview block no-underline">
+          ${imageHtml}
+          <div class="lp-body">
+            <div class="lp-domain"><img class="lp-favicon" src="${escapeHtml(preview.favicon)}" width="14" height="14" alt="">${escapeHtml(preview.domain)}</div>
+            <div class="lp-title">${escapeHtml(preview.title)}</div>
+            ${descHtml}
+          </div>
+        </a>`;
+      }
+
       return {
         startPolling, stopPolling, pollConversations, showBadge, hideBadge,
         loadList, renderList, filterList, setFilter, openConversation, getSelectedPhone,
         renderMessages, checkPauseStatus, togglePauseIA,
         showReplyBar, hideReplyBar, autoResizeInput, handleReplyKeydown, sendReply,
         handleFileSelect, clearFile, toggleEmojiPicker, showEmojiCategory, insertEmoji,
-        wrapSelection, openLightbox, closeLightbox, groupConversations, updateFilterCounts
+        wrapSelection, openLightbox, closeLightbox, groupConversations, updateFilterCounts,
+        toggleAudioPlay, cycleAudioSpeed, openVideoPlayer,
+        startRecording, stopRecording, cancelRecording
       };
     })();
 
