@@ -1832,7 +1832,7 @@
         if (selectedConvPhone) {
           pollActiveChat();
         }
-      } catch (e) { /* silent fail on poll */ }
+      } catch (e) { console.warn('[CRM poll-conv]', e.message || e); }
     }
 
     function showConvBadge(count) {
@@ -1867,7 +1867,7 @@
             chatEl.scrollTop = chatEl.scrollHeight;
           }
         }
-      } catch (e) { /* silent */ }
+      } catch (e) { console.warn('[CRM poll-chat]', e.message || e); }
     }
 
     function isScrolledToBottom() {
@@ -2228,7 +2228,7 @@
             return;
           }
         }
-      } catch (e) { /* silent */ }
+      } catch (e) { console.warn('[CRM pause-check]', e.message || e); }
       hidePauseBanner();
       updateAiStatus(true);
     }
@@ -2686,7 +2686,11 @@
         lastConvTotalCount = msgs.filter(m => m.direction === 'inbound').length;
         allConversations = groupConversations(msgs);
         updateConvCount();
-      } catch (e) { /* silent */ }
+        console.log('[CRM] Init OK — ' + msgs.length + ' msgs loaded, ' + allConversations.length + ' conversations');
+      } catch (e) {
+        console.error('[CRM init-poll] FALHOU:', e.message || e);
+        showToast('Erro ao conectar com Supabase: ' + (e.message || 'Desconhecido'), 'error');
+      }
       startConvPolling();
     }
 
