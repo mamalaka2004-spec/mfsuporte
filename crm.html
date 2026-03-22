@@ -1048,11 +1048,12 @@
         const cleanPhone = phone.replace('@s.whatsapp.net', '');
         const isImage = mediaFile.category === 'image';
         const isVideo = mediaFile.category === 'video';
+        const isAudio = mediaFile.category === 'audio' || mediaFile.name?.match(/\.(webm|ogg|m4a|mp3|opus)$/i);
         const body = {
           number: cleanPhone,
-          mediatype: isImage ? 'image' : isVideo ? 'video' : 'document',
+          mediatype: isAudio ? 'audio' : isImage ? 'image' : isVideo ? 'video' : 'document',
           media: publicUrl,
-          caption: caption || '',
+          caption: isAudio ? '' : (caption || ''),
           fileName: mediaFile.name
         };
         const res = await fetch(`${this.EVO_API_URL}/message/sendMedia/${encodeURIComponent(this.EVO_INSTANCE)}`, {
@@ -2346,11 +2347,19 @@
       async function pollActiveChat() {
         if (!Store.state.selectedPhone) return;
         try {
-          const msgs = await ApiService.supabaseGet(`conversations?phone=eq.${encodeURIComponent(Store.state.selectedPhone)}&order=created_at.asc&limit=200`);
-          if (msgs.length !== Store.state.lastChatMsgCount) {
+          // Only check for NEW messages (after the last loaded one)
+          const currentMsgs = Store.state.chatMessages || [];
+          const lastTs = currentMsgs.length ? currentMsgs[currentMsgs.length - 1].created_at : null;
+          let query = `conversations?phone=eq.${encodeURIComponent(Store.state.selectedPhone)}&order=created_at.asc`;
+          if (lastTs) query += `&created_at=gt.${encodeURIComponent(lastTs)}`;
+          else query += '&limit=50';
+
+          const newMsgs = await ApiService.supabaseGet(query);
+          if (newMsgs.length > 0) {
+            Store.state.chatMessages = [...currentMsgs, ...newMsgs];
+            Store.state.lastChatMsgCount = (Store.state.lastChatMsgCount || 0) + newMsgs.length;
             const wasAtBottom = isScrolledToBottom();
-            renderMessages(msgs, true);
-            Store.state.lastChatMsgCount = msgs.length;
+            renderMessages(Store.state.chatMessages, true);
             if (wasAtBottom) {
               const chatEl = document.getElementById('conv-chat-messages');
               chatEl.scrollTop = chatEl.scrollHeight;
@@ -2500,14 +2509,71 @@
         refreshIcons();
 
         try {
-          const msgs = await ApiService.supabaseGet(`conversations?phone=eq.${encodeURIComponent(phone)}&order=created_at.asc&limit=200`);
-          Store.state.lastChatMsgCount = msgs.length;
-          renderMessages(msgs, false);
+          // Count total messages for this phone
+          const allMsgs = await ApiService.supabaseGet(`conversations?phone=eq.${encodeURIComponent(phone)}&select=created_at&order=created_at.asc`);
+          Store.state.chatTotalMsgs = allMsgs.length;
+          Store.state.chatPageSize = 50;
+          Store.state.chatLoadedFrom = Math.max(0, allMsgs.length - 50);
+
+          const msgs = allMsgs.slice(Store.state.chatLoadedFrom);
+          Store.state.chatAllMsgs = allMsgs;
+          Store.state.lastChatMsgCount = allMsgs.length;
+
+          // Load last 50 messages with full data
+          const recentMsgs = await ApiService.supabaseGet(`conversations?phone=eq.${encodeURIComponent(phone)}&order=created_at.asc&limit=50&offset=${Store.state.chatLoadedFrom}`);
+          Store.state.chatMessages = recentMsgs;
+          renderMessages(recentMsgs, false);
           initDragDrop();
+          initScrollPagination();
           checkPauseStatus(phone);
         } catch (err) {
           chatEl.innerHTML = `<div class="flex items-center justify-center h-full text-red-400 text-[13px]">${err.message}</div>`;
         }
+      }
+
+      let isLoadingMore = false;
+      function initScrollPagination() {
+        const chatEl = document.getElementById('conv-chat-messages');
+        if (!chatEl || chatEl.dataset.paginationInit) return;
+        chatEl.dataset.paginationInit = '1';
+
+        chatEl.addEventListener('scroll', async () => {
+          if (isLoadingMore || chatEl.scrollTop > 80 || Store.state.chatLoadedFrom <= 0) return;
+          isLoadingMore = true;
+
+          const phone = Store.state.selectedPhone;
+          if (!phone) { isLoadingMore = false; return; }
+
+          // Show loading indicator at top
+          const loader = document.createElement('div');
+          loader.id = 'chat-load-more';
+          loader.className = 'flex items-center justify-center py-3';
+          loader.innerHTML = '<div class="animate-spin w-4 h-4 border-2 border-[var(--border-color)] border-t-indigo-500 rounded-full"></div>';
+          chatEl.prepend(loader);
+
+          try {
+            const prevHeight = chatEl.scrollHeight;
+            const newFrom = Math.max(0, Store.state.chatLoadedFrom - 50);
+            const loadCount = Store.state.chatLoadedFrom - newFrom;
+            const olderMsgs = await ApiService.supabaseGet(`conversations?phone=eq.${encodeURIComponent(phone)}&order=created_at.asc&limit=${loadCount}&offset=${newFrom}`);
+
+            Store.state.chatLoadedFrom = newFrom;
+            Store.state.chatMessages = [...olderMsgs, ...Store.state.chatMessages];
+
+            // Re-render all loaded messages
+            renderMessages(Store.state.chatMessages, false);
+            initDragDrop();
+
+            // Maintain scroll position
+            const newHeight = chatEl.scrollHeight;
+            chatEl.scrollTop = newHeight - prevHeight;
+          } catch (e) {
+            console.warn('[CRM] Load more failed:', e);
+          } finally {
+            document.getElementById('chat-load-more')?.remove();
+            isLoadingMore = false;
+          }
+        });
       }
 
       function getSelectedPhone() { return Store.state.selectedPhone; }
@@ -2526,11 +2592,12 @@
         // VIDEO — thumbnail with play overlay (WhatsApp-style)
         if (mime.startsWith('video/')) {
           const vidId = 'vid-' + Math.random().toString(36).substr(2, 8);
+          const _vid = vidId;
           setTimeout(() => {
-            const v = document.getElementById('${vidId}');
+            const v = document.getElementById(_vid);
             if (v) v.addEventListener('loadedmetadata', function() {
               const d = Math.floor(v.duration), mins = Math.floor(d/60), secs = d%60;
-              const el = document.getElementById('dur-${vidId}');
+              const el = document.getElementById('dur-' + _vid);
               if (el) el.textContent = mins + ':' + (secs<10?'0':'') + secs;
             });
           }, 50);
@@ -3057,58 +3124,101 @@
       const audioSpeeds = [1, 1.5, 2];
 
       function initAudioPlayers() {
-        if (typeof WaveSurfer === 'undefined') return;
         document.querySelectorAll('.audio-player:not([data-init])').forEach(el => {
           const id = el.id;
           const src = el.dataset.src;
           if (!src || audioPlayers[id]) return;
           el.setAttribute('data-init', '1');
           const waveEl = document.getElementById('wave-' + id);
+          const timeEl = document.getElementById('time-' + id);
+          const fmt = s => { const m = Math.floor(s/60); const sec = Math.floor(s%60); return m + ':' + (sec<10?'0':'') + sec; };
           if (!waveEl) return;
-          try {
-            const ws = WaveSurfer.create({
-              container: waveEl,
-              waveColor: 'rgba(161,161,170,0.4)',
-              progressColor: '#818cf8',
-              height: 32,
-              barWidth: 2.5,
-              barGap: 1.5,
-              barRadius: 2,
-              url: src,
-              backend: 'WebAudio',
-              normalize: true,
-              cursorWidth: 0,
-            });
-            const fmt = s => { const m = Math.floor(s/60); const sec = Math.floor(s%60); return m + ':' + (sec<10?'0':'') + sec; };
-            const timeEl = document.getElementById('time-' + id);
-            ws.on('ready', () => { if (timeEl) timeEl.textContent = fmt(ws.getDuration()); });
-            ws.on('audioprocess', t => { if (timeEl) timeEl.textContent = fmt(t); });
-            ws.on('finish', () => {
-              const btn = el.querySelector('.play-btn');
-              if (btn) btn.innerHTML = '<i data-lucide="play" class="w-4 h-4"></i>';
-              if (timeEl) timeEl.textContent = fmt(ws.getDuration());
-              refreshIcons();
-            });
-            audioPlayers[id] = { ws, speedIdx: 0 };
-          } catch(e) { console.warn('[Audio] WaveSurfer init failed:', e); }
+
+          // Try WaveSurfer first, fallback to HTML5 Audio on CORS/error
+          if (typeof WaveSurfer !== 'undefined') {
+            try {
+              const ws = WaveSurfer.create({
+                container: waveEl,
+                waveColor: 'rgba(161,161,170,0.4)',
+                progressColor: '#818cf8',
+                height: 32,
+                barWidth: 2.5,
+                barGap: 1.5,
+                barRadius: 2,
+                url: src,
+                normalize: true,
+                cursorWidth: 0,
+              });
+              ws.on('ready', () => { if (timeEl) timeEl.textContent = fmt(ws.getDuration()); });
+              ws.on('audioprocess', t => { if (timeEl) timeEl.textContent = fmt(t); });
+              ws.on('finish', () => {
+                const btn = el.querySelector('.play-btn');
+                if (btn) btn.innerHTML = '<i data-lucide="play" class="w-4 h-4"></i>';
+                if (timeEl) timeEl.textContent = fmt(ws.getDuration());
+                refreshIcons();
+              });
+              ws.on('error', () => { initFallbackAudio(el, id, src, waveEl, timeEl, fmt); });
+              audioPlayers[id] = { ws, speedIdx: 0, type: 'wavesurfer' };
+              return;
+            } catch(e) { console.warn('[Audio] WaveSurfer failed, using fallback:', e); }
+          }
+          initFallbackAudio(el, id, src, waveEl, timeEl, fmt);
         });
+      }
+
+      function initFallbackAudio(el, id, src, waveEl, timeEl, fmt) {
+        // HTML5 Audio fallback with fake waveform bars
+        const audio = new Audio(src);
+        audio.preload = 'metadata';
+        waveEl.style.display = 'flex';
+        waveEl.style.alignItems = 'center';
+        waveEl.style.gap = '1px';
+        waveEl.innerHTML = Array.from({length: 35}, () =>
+          '<div style="width:2.5px;height:' + Math.max(4, Math.random()*28) + 'px;border-radius:2px;background:rgba(161,161,170,0.4);transition:background 0.1s"></div>'
+        ).join('');
+        const bars = waveEl.querySelectorAll('div');
+        audio.addEventListener('loadedmetadata', () => { if (timeEl) timeEl.textContent = fmt(audio.duration); });
+        audio.addEventListener('timeupdate', () => {
+          if (timeEl) timeEl.textContent = fmt(audio.currentTime);
+          const ratio = audio.currentTime / (audio.duration || 1);
+          const played = Math.floor(ratio * bars.length);
+          bars.forEach((b, i) => { b.style.background = i < played ? '#818cf8' : 'rgba(161,161,170,0.4)'; });
+        });
+        audio.addEventListener('ended', () => {
+          const btn = el.querySelector('.play-btn');
+          if (btn) btn.innerHTML = '<i data-lucide="play" class="w-4 h-4"></i>';
+          if (timeEl) timeEl.textContent = fmt(audio.duration);
+          bars.forEach(b => { b.style.background = 'rgba(161,161,170,0.4)'; });
+          refreshIcons();
+        });
+        audioPlayers[id] = { audio, speedIdx: 0, type: 'html5' };
       }
 
       function toggleAudioPlay(id) {
         const p = audioPlayers[id];
-        if (!p) { initAudioPlayers(); return; }
+        if (!p) { initAudioPlayers(); setTimeout(() => toggleAudioPlay(id), 300); return; }
         // Pause any other playing audio
         Object.entries(audioPlayers).forEach(([k, v]) => {
-          if (k !== id && v.ws.isPlaying()) {
-            v.ws.pause();
-            const otherBtn = document.querySelector('#' + k + ' .play-btn');
-            if (otherBtn) { otherBtn.innerHTML = '<i data-lucide="play" class="w-4 h-4"></i>'; }
+          if (k !== id) {
+            const isPlaying = v.type === 'html5' ? !v.audio.paused : v.ws.isPlaying();
+            if (isPlaying) {
+              if (v.type === 'html5') v.audio.pause(); else v.ws.pause();
+              const otherBtn = document.querySelector('#' + CSS.escape(k) + ' .play-btn');
+              if (otherBtn) otherBtn.innerHTML = '<i data-lucide="play" class="w-4 h-4"></i>';
+            }
           }
         });
-        p.ws.playPause();
-        const btn = document.querySelector('#' + id + ' .play-btn');
+        let isPlaying;
+        if (p.type === 'html5') {
+          if (p.audio.paused) { p.audio.play(); isPlaying = true; }
+          else { p.audio.pause(); isPlaying = false; }
+        } else {
+          p.ws.playPause();
+          isPlaying = p.ws.isPlaying();
+        }
+        const btn = document.querySelector('#' + CSS.escape(id) + ' .play-btn');
         if (btn) {
-          btn.innerHTML = p.ws.isPlaying()
+          btn.innerHTML = isPlaying
             ? '<i data-lucide="pause" class="w-4 h-4"></i>'
             : '<i data-lucide="play" class="w-4 h-4"></i>';
         }
@@ -3119,9 +3229,11 @@
         const p = audioPlayers[id];
         if (!p) return;
         p.speedIdx = (p.speedIdx + 1) % audioSpeeds.length;
-        p.ws.setPlaybackRate(audioSpeeds[p.speedIdx]);
-        const btn = document.querySelector('#' + id + ' .speed-btn');
-        if (btn) btn.textContent = audioSpeeds[p.speedIdx] + 'x';
+        const speed = audioSpeeds[p.speedIdx];
+        if (p.type === 'html5') p.audio.playbackRate = speed;
+        else p.ws.setPlaybackRate(speed);
+        const btn = document.querySelector('#' + CSS.escape(id) + ' .speed-btn');
+        if (btn) btn.textContent = speed + 'x';
       }
 
       // ---- Video Player Modal ----
@@ -3257,7 +3369,7 @@
 
         try {
           const mediaUrl = await ApiService.uploadToSupabaseStorage(file, phone);
-          await ApiService.evolutionSendMedia(phone, { category: 'document', name: fileName }, '', mediaUrl);
+          await ApiService.evolutionSendMedia(phone, { category: 'audio', name: fileName }, '', mediaUrl);
 
           await ApiService.supabasePost('conversations', {
             phone: phone,
