@@ -460,10 +460,10 @@
           <div id="conv-emoji-picker" class="hidden px-4 pt-2">
             <div class="bg-[var(--surface)] border border-[var(--border-color)] rounded-xl p-2 shadow-lg">
               <div class="flex gap-1 mb-2 border-b border-[var(--border-color)] pb-2">
-                <button onclick="ChatModule.showEmojiCategory('faces')" class="emoji-cat-btn active text-[12px] px-2 py-1 rounded-lg bg-[var(--glass)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-hover)] transition-all cursor-pointer">😊</button>
-                <button onclick="ChatModule.showEmojiCategory('gestures')" class="emoji-cat-btn text-[12px] px-2 py-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-hover)] transition-all cursor-pointer">👍</button>
-                <button onclick="ChatModule.showEmojiCategory('symbols')" class="emoji-cat-btn text-[12px] px-2 py-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-hover)] transition-all cursor-pointer">❤️</button>
-                <button onclick="ChatModule.showEmojiCategory('objects')" class="emoji-cat-btn text-[12px] px-2 py-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-hover)] transition-all cursor-pointer">🎉</button>
+                <button data-cat="faces" onclick="ChatModule.showEmojiCategory('faces')" class="emoji-cat-btn active text-[12px] px-2 py-1 rounded-lg bg-[var(--glass)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-hover)] transition-all cursor-pointer">😊</button>
+                <button data-cat="gestures" onclick="ChatModule.showEmojiCategory('gestures')" class="emoji-cat-btn text-[12px] px-2 py-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-hover)] transition-all cursor-pointer">👍</button>
+                <button data-cat="symbols" onclick="ChatModule.showEmojiCategory('symbols')" class="emoji-cat-btn text-[12px] px-2 py-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-hover)] transition-all cursor-pointer">❤️</button>
+                <button data-cat="objects" onclick="ChatModule.showEmojiCategory('objects')" class="emoji-cat-btn text-[12px] px-2 py-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-hover)] transition-all cursor-pointer">🎉</button>
               </div>
               <div id="conv-emoji-grid" class="grid grid-cols-8 gap-0.5 max-h-[160px] overflow-y-auto"></div>
             </div>
@@ -2144,8 +2144,9 @@
 
       function setFilter(filter) {
         Store.state.convFilter = filter;
-        document.querySelectorAll('#conv-filter-pills .u-chip').forEach(c => c.classList.remove('active'));
-        event.target.closest('.u-chip')?.classList.add('active');
+        document.querySelectorAll('#conv-filter-pills .u-chip').forEach((c, i) => {
+          c.classList.toggle('active', (i === 0 && filter === 'all') || (i === 1 && filter === 'unread'));
+        });
         renderList(getFilteredConvs());
       }
 
@@ -2690,8 +2691,10 @@
 
       function showEmojiCategory(cat) {
         const grid = document.getElementById('conv-emoji-grid');
-        document.querySelectorAll('.emoji-cat-btn').forEach(b => b.classList.remove('active', 'bg-[var(--glass)]'));
-        event.target.closest('.emoji-cat-btn')?.classList.add('active', 'bg-[var(--glass)]');
+        document.querySelectorAll('.emoji-cat-btn').forEach(b => {
+          b.classList.toggle('active', b.dataset.cat === cat);
+          b.classList.toggle('bg-[var(--glass)]', b.dataset.cat === cat);
+        });
         grid.innerHTML = (emojiSets[cat] || []).map(e =>
           `<button onclick="ChatModule.insertEmoji('${e}')" class="w-8 h-8 flex items-center justify-center text-[18px] rounded-lg hover:bg-[var(--glass)] cursor-pointer transition-all duration-100 hover:scale-110">${e}</button>`
         ).join('');
