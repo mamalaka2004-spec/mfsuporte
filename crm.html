@@ -11,6 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
   <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -910,6 +911,14 @@
     // ════════════════════════════════════════════════════════════════
     // ██  EVENT BUS  ██
     // ════════════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════════════
+    // ██  SUPABASE REALTIME CLIENT  ██
+    // ════════════════════════════════════════════════════════════════
+    const supabaseClient = window.supabase.createClient(
+      'https://xrsswlaipdczhocwmvbl.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhyc3N3bGFpcGRjemhvY3dtdmJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MjM1MjUsImV4cCI6MjA4ODI5OTUyNX0.sSVShzG4DZJj9oBRhBplmYHHATix7jgxCLmkov2C6XE'
+    );
+
     const EventBus = {
       _events: {},
       on(e, f) { (this._events[e] ||= []).push(f); },
@@ -941,7 +950,11 @@
         convNewMsgCount: 0,
         panelMaximized: false,
         modalMaximized: false,
-        createEditorOpen: false
+        createEditorOpen: false,
+        chatTotalMsgs: 0,
+        chatLoadedFrom: 0,
+        chatPageSize: 50,
+        realtimeChannel: null
       },
       _listeners: [],
       setState(p) { Object.assign(this.state, p); this._listeners.forEach(f => f(this.state)); },
@@ -2286,12 +2299,86 @@
 
       function startPolling() {
         stopPolling();
-        convPollTimer = setInterval(() => pollConversations(), 8000);
+        convPollTimer = setInterval(() => pollConversations(), 30000); // 30s fallback (Realtime is primary)
       }
 
       function stopPolling() {
         if (convPollTimer) { clearInterval(convPollTimer); convPollTimer = null; }
         if (chatPollTimer) { clearInterval(chatPollTimer); chatPollTimer = null; }
+      }
+
+      // ── Supabase Realtime ──
+      function subscribeRealtime() {
+        unsubscribeRealtime();
+        try {
+          const channel = supabaseClient
+            .channel('crm-conversations')
+            .on('postgres_changes', {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'conversations'
+            }, (payload) => {
+              const msg = payload.new;
+              console.log('[Realtime] New message:', msg.phone, msg.direction);
+
+              // Update conversation list
+              const existing = Store.state.conversations.find(c => c.phone === msg.phone);
+              if (existing) {
+                existing.lastMsg = msg.message_text;
+                existing.lastAt = msg.created_at;
+                existing.count++;
+                existing.direction = msg.direction;
+                Store.state.conversations.sort((a, b) => new Date(b.lastAt) - new Date(a.lastAt));
+              } else {
+                Store.state.conversations.unshift({
+                  phone: msg.phone, name: msg.sender_name || msg.phone,
+                  lastMsg: msg.message_text, lastAt: msg.created_at,
+                  count: 1, direction: msg.direction
+                });
+              }
+              renderList(getFilteredConvs());
+              updateFilterCounts();
+
+              // If this msg is for the active chat, append it
+              if (Store.state.selectedPhone && msg.phone === Store.state.selectedPhone) {
+                const currentMsgs = Store.state.chatMessages || [];
+                const isDup = currentMsgs.some(m => m.created_at === msg.created_at && m.message_text === msg.message_text && m.direction === msg.direction);
+                if (!isDup) {
+                  currentMsgs.push(msg);
+                  Store.state.chatMessages = currentMsgs;
+                  const wasAtBottom = isScrolledToBottom();
+                  renderMessages(currentMsgs, true);
+                  if (wasAtBottom) {
+                    const chatEl = document.getElementById('conv-chat-messages');
+                    if (chatEl) chatEl.scrollTop = chatEl.scrollHeight;
+                  }
+                }
+              }
+
+              // Badge for new inbound when not on conversations view
+              if (msg.direction === 'inbound') {
+                const activeView = document.querySelector('.nav-tab.active')?.dataset?.view;
+                if (activeView !== 'conversations') {
+                  Store.state.convNewMsgCount++;
+                  showBadge(Store.state.convNewMsgCount);
+                }
+              }
+            })
+            .subscribe((status) => {
+              console.log('[Realtime] Subscription status:', status);
+            });
+
+          Store.state.realtimeChannel = channel;
+        } catch (e) {
+          console.warn('[Realtime] Subscribe failed, polling fallback active:', e.message || e);
+        }
+      }
+
+      function unsubscribeRealtime() {
+        if (Store.state.realtimeChannel) {
+          supabaseClient.removeChannel(Store.state.realtimeChannel);
+          Store.state.realtimeChannel = null;
+        }
       }
 
       async function pollConversations() {
@@ -3513,7 +3600,7 @@
       }
 
       return {
-        startPolling, stopPolling, pollConversations, showBadge, hideBadge,
+        startPolling, stopPolling, pollConversations, showBadge, hideBadge, subscribeRealtime, unsubscribeRealtime,
         loadList, renderList, filterList, setFilter, openConversation, getSelectedPhone,
         renderMessages, checkPauseStatus, togglePauseIA,
         showReplyBar, hideReplyBar, autoResizeInput, handleReplyKeydown, sendReply,
@@ -3625,6 +3712,7 @@
         showToast('Erro ao conectar com Supabase: ' + (e.message || 'Desconhecido'), 'error');
       }
       ChatModule.startPolling();
+      ChatModule.subscribeRealtime();
     }
 
     init();
