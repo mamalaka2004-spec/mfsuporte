@@ -358,6 +358,12 @@
       <button class="nav-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left" data-view="conversations" style="color:var(--muted-fg);" onclick="Router.switchView('conversations')">
         <i data-lucide="message-circle" class="w-[18px] h-[18px] flex-shrink-0"></i><span class="nav-lbl whitespace-nowrap">Conversas <span id="conv-new-badge" class="hidden ml-1 min-w-[18px] h-[18px] items-center justify-center rounded-full bg-green-500 text-white text-[10px] font-bold leading-none px-1"></span></span>
       </button>
+      <button class="nav-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left" data-view="email" style="color:var(--muted-fg);" onclick="Router.switchView('email')">
+        <i data-lucide="mail" class="w-[18px] h-[18px] flex-shrink-0"></i><span class="nav-lbl whitespace-nowrap">Email <span class="tab-count ml-1 text-[10px] opacity-60" id="count-email">0</span></span>
+      </button>
+      <button class="nav-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left" data-view="nps" style="color:var(--muted-fg);" onclick="Router.switchView('nps')">
+        <i data-lucide="star" class="w-[18px] h-[18px] flex-shrink-0"></i><span class="nav-lbl whitespace-nowrap">NPS</span>
+      </button>
       <button class="nav-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left" data-view="reports" style="color:var(--muted-fg);" onclick="Router.switchView('reports')">
         <i data-lucide="bar-chart-3" class="w-[18px] h-[18px] flex-shrink-0"></i><span class="nav-lbl whitespace-nowrap">Relatorios</span>
       </button>
@@ -407,12 +413,12 @@
     </div>
 
     <!-- CONTENT -->
-    <div class="flex-1 overflow-hidden">
+    <div class="flex-1 overflow-hidden flex flex-col">
 
       <!-- ═══════ KANBAN VIEW ═══════ -->
-      <div class="view active" id="view-kanban">
-        <div class="p-5 px-7 overflow-x-auto h-full">
-          <div class="flex gap-3 min-h-[calc(100vh-100px)]" id="kanban-board"></div>
+      <div class="view active flex flex-col flex-1" id="view-kanban">
+        <div class="p-5 px-7 overflow-x-auto flex-1 flex flex-col min-h-0">
+          <div class="flex gap-3 flex-1 min-h-0" id="kanban-board"></div>
         </div>
       </div>
 
@@ -555,6 +561,113 @@
               <img id="conv-lightbox-img" class="max-w-[90vw] max-h-[90vh] rounded-xl shadow-2xl" src="" alt="Imagem ampliada">
               <button class="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-all" aria-label="Fechar"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════ EMAIL VIEW ═══════ -->
+      <div class="view hidden" id="view-email">
+        <div class="p-6 px-7">
+          <div class="flex gap-2.5 mb-5 flex-wrap items-center justify-between">
+            <div class="flex gap-2.5 items-center flex-wrap flex-1">
+              <input type="text" placeholder="Buscar emails..." id="email-search" oninput="EmailModule.render()"
+                class="flex-1 min-w-[220px] bg-[var(--surface-2)] border border-[var(--border-color)] text-[var(--text-secondary)] px-3.5 py-2.5 rounded-lg text-[13px] font-sans transition-all duration-150 min-h-[40px] focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+              <select id="email-filter-status" onchange="EmailModule.render()"
+                class="min-w-[150px] bg-[var(--surface-2)] border border-[var(--border-color)] text-[var(--text-secondary)] px-3.5 py-2.5 rounded-lg text-[13px] font-sans transition-all duration-150 min-h-[40px] focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+                <option value="">Todos</option><option value="novo">Novo</option><option value="em_andamento">Em Andamento</option><option value="respondido">Respondido</option><option value="fechado">Fechado</option>
+              </select>
+            </div>
+            <button onclick="EmailModule.refresh()" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-medium bg-[var(--glass)] border border-[var(--border-color)] text-[var(--text-muted)] rounded-lg cursor-pointer hover:text-[var(--text-primary)] transition-all duration-150 min-h-[40px]">
+              <i data-lucide="refresh-cw" class="w-4 h-4"></i> Atualizar
+            </button>
+          </div>
+          <div class="overflow-x-auto border border-[var(--border-color)] rounded-xl bg-[var(--surface-2)] shadow-[var(--shadow-card)]">
+            <table class="w-full border-collapse text-[13px]">
+              <thead>
+                <tr>
+                  <th class="text-left px-4 py-3 text-[var(--text-muted)] font-semibold border-b border-[var(--border-color)] text-[11px] uppercase tracking-wider bg-[var(--surface-2)] sticky top-0 z-[2]">De</th>
+                  <th class="text-left px-4 py-3 text-[var(--text-muted)] font-semibold border-b border-[var(--border-color)] text-[11px] uppercase tracking-wider bg-[var(--surface-2)] sticky top-0 z-[2]">Assunto</th>
+                  <th class="text-left px-4 py-3 text-[var(--text-muted)] font-semibold border-b border-[var(--border-color)] text-[11px] uppercase tracking-wider bg-[var(--surface-2)] sticky top-0 z-[2]">Data</th>
+                  <th class="text-left px-4 py-3 text-[var(--text-muted)] font-semibold border-b border-[var(--border-color)] text-[11px] uppercase tracking-wider bg-[var(--surface-2)] sticky top-0 z-[2]">Status</th>
+                  <th class="text-left px-4 py-3 text-[var(--text-muted)] font-semibold border-b border-[var(--border-color)] text-[11px] uppercase tracking-wider bg-[var(--surface-2)] sticky top-0 z-[2]">Acoes</th>
+                </tr>
+              </thead>
+              <tbody id="email-tbody"><tr><td colspan="5" class="px-4 py-8 text-center text-[var(--text-muted)] text-[13px]">Nenhum email encontrado</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <!-- Email detail slide panel -->
+        <div id="email-detail" class="hidden fixed top-0 right-0 w-[600px] h-screen bg-[var(--surface)] border-l border-[var(--border-color)] z-[100] flex flex-col" style="box-shadow:var(--shadow-panel);">
+          <div class="flex items-center justify-between px-5 py-3 border-b border-[var(--border-color)]">
+            <span class="text-[12px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Thread de Email</span>
+            <button onclick="EmailModule.closeDetail()" class="w-8 h-8 rounded-lg bg-[var(--glass)] border border-[var(--border-color)] text-[var(--text-muted)] flex items-center justify-center cursor-pointer hover:text-red-500 transition-all"><i data-lucide="x" class="w-4 h-4"></i></button>
+          </div>
+          <div id="email-thread-content" class="flex-1 overflow-y-auto p-5"></div>
+          <div class="flex gap-2 px-5 py-3 border-t border-[var(--border-color)]">
+            <button onclick="EmailModule.createTicketFromEmail()" class="inline-flex items-center gap-1.5 px-4 py-2 text-[13px] font-medium bg-[var(--primary)] text-white rounded-lg cursor-pointer hover:shadow-lg transition-all min-h-[36px]">
+              <i data-lucide="ticket" class="w-4 h-4"></i> Criar Ticket
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════ NPS VIEW ═══════ -->
+      <div class="view hidden" id="view-nps">
+        <div class="p-6 px-7">
+          <!-- KPIs -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="bg-[var(--surface-2)] border border-[var(--border-color)] rounded-xl p-5">
+              <div class="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-2">NPS Score</div>
+              <div class="text-3xl font-bold text-[var(--text-primary)]" id="nps-score">--</div>
+              <div class="text-[11px] text-[var(--text-muted)] mt-1" id="nps-label">Sem dados</div>
+            </div>
+            <div class="bg-[var(--surface-2)] border border-[var(--border-color)] rounded-xl p-5">
+              <div class="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-2">Respostas</div>
+              <div class="text-3xl font-bold text-[var(--text-primary)]" id="nps-responses">0</div>
+              <div class="text-[11px] text-[var(--text-muted)] mt-1" id="nps-response-rate">0% taxa de resposta</div>
+            </div>
+            <div class="bg-[var(--surface-2)] border border-[var(--border-color)] rounded-xl p-5">
+              <div class="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-2">Promotores</div>
+              <div class="text-3xl font-bold text-green-500" id="nps-promoters">0</div>
+            </div>
+            <div class="bg-[var(--surface-2)] border border-[var(--border-color)] rounded-xl p-5">
+              <div class="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-2">Detratores</div>
+              <div class="text-3xl font-bold text-red-500" id="nps-detractors">0</div>
+            </div>
+          </div>
+          <!-- Chart + Manual Send -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+            <div class="lg:col-span-2 bg-[var(--surface-2)] border border-[var(--border-color)] rounded-xl p-5">
+              <div class="text-[12px] font-semibold text-[var(--text-muted)] uppercase mb-3">Tendencia NPS (30 dias)</div>
+              <canvas id="nps-chart" height="200"></canvas>
+            </div>
+            <div class="bg-[var(--surface-2)] border border-[var(--border-color)] rounded-xl p-5 flex flex-col">
+              <div class="text-[12px] font-semibold text-[var(--text-muted)] uppercase mb-3">Enviar NPS Manual</div>
+              <input type="text" id="nps-phone" placeholder="5511999999999" class="w-full bg-[var(--surface)] border border-[var(--border-color)] text-[var(--text-secondary)] px-3 py-2 rounded-lg text-[13px] mb-2 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+              <input type="text" id="nps-name" placeholder="Nome do cliente" class="w-full bg-[var(--surface)] border border-[var(--border-color)] text-[var(--text-secondary)] px-3 py-2 rounded-lg text-[13px] mb-2 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+              <select id="nps-trigger-type" class="w-full bg-[var(--surface)] border border-[var(--border-color)] text-[var(--text-secondary)] px-3 py-2 rounded-lg text-[13px] mb-3 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
+                <option value="manual">Manual</option><option value="fechamento">Fechamento de Ticket</option><option value="resolucao">Resolucao</option><option value="etapa">Etapa Especifica</option>
+              </select>
+              <button onclick="NpsModule.sendManual()" class="mt-auto w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-[13px] font-medium bg-[var(--primary)] text-white rounded-lg cursor-pointer hover:shadow-lg hover:shadow-sky-500/25 transition-all">
+                <i data-lucide="send" class="w-4 h-4"></i> Enviar via WhatsApp
+              </button>
+            </div>
+          </div>
+          <!-- Survey List -->
+          <div class="overflow-x-auto border border-[var(--border-color)] rounded-xl bg-[var(--surface-2)] shadow-[var(--shadow-card)]">
+            <table class="w-full border-collapse text-[13px]">
+              <thead>
+                <tr>
+                  <th class="text-left px-4 py-3 text-[var(--text-muted)] font-semibold border-b border-[var(--border-color)] text-[11px] uppercase tracking-wider bg-[var(--surface-2)] sticky top-0">Cliente</th>
+                  <th class="text-left px-4 py-3 text-[var(--text-muted)] font-semibold border-b border-[var(--border-color)] text-[11px] uppercase tracking-wider bg-[var(--surface-2)] sticky top-0">Telefone</th>
+                  <th class="text-left px-4 py-3 text-[var(--text-muted)] font-semibold border-b border-[var(--border-color)] text-[11px] uppercase tracking-wider bg-[var(--surface-2)] sticky top-0">Nota</th>
+                  <th class="text-left px-4 py-3 text-[var(--text-muted)] font-semibold border-b border-[var(--border-color)] text-[11px] uppercase tracking-wider bg-[var(--surface-2)] sticky top-0">Feedback</th>
+                  <th class="text-left px-4 py-3 text-[var(--text-muted)] font-semibold border-b border-[var(--border-color)] text-[11px] uppercase tracking-wider bg-[var(--surface-2)] sticky top-0">Enviado</th>
+                  <th class="text-left px-4 py-3 text-[var(--text-muted)] font-semibold border-b border-[var(--border-color)] text-[11px] uppercase tracking-wider bg-[var(--surface-2)] sticky top-0">Tipo</th>
+                </tr>
+              </thead>
+              <tbody id="nps-tbody"><tr><td colspan="6" class="px-4 py-8 text-center text-[var(--text-muted)] text-[13px]">Nenhuma pesquisa NPS registrada</td></tr></tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -1507,7 +1620,7 @@
         for (const stage of Helpers.KANBAN_COLUMNS) {
           const colTickets = tickets.filter(t => Helpers.getKanbanStage(t.statuses) === stage);
           const col = document.createElement('div');
-          col.className = 'kanban-column min-w-[280px] max-w-[300px] flex-shrink-0 bg-[var(--surface-2)] border border-[var(--border-color)] rounded-xl flex flex-col';
+          col.className = 'kanban-column min-w-[280px] max-w-[300px] flex-shrink-0 bg-[var(--surface-2)] border border-[var(--border-color)] rounded-xl flex flex-col min-h-0 overflow-hidden';
           col.style.boxShadow = 'var(--shadow-card)';
           col.dataset.status = stage;
 
@@ -1518,7 +1631,7 @@
             </div>`;
 
           const cardsEl = document.createElement('div');
-          cardsEl.className = 'flex-1 p-2.5 min-h-[40px] overflow-y-auto space-y-2';
+          cardsEl.className = 'flex-1 p-2.5 min-h-0 overflow-y-auto space-y-2';
           cardsEl.id = `col-${stage.replace(/\s+/g, '-')}`;
 
           colTickets.forEach((t, cardIdx) => {
@@ -1579,7 +1692,7 @@
         const orphans = tickets.filter(t => Helpers.getKanbanStage(t.statuses) === null);
         if (orphans.length > 0) {
           const col = document.createElement('div');
-          col.className = 'kanban-column min-w-[280px] max-w-[300px] flex-shrink-0 bg-[var(--surface-2)] border border-[var(--border-color)] rounded-xl flex flex-col';
+          col.className = 'kanban-column min-w-[280px] max-w-[300px] flex-shrink-0 bg-[var(--surface-2)] border border-[var(--border-color)] rounded-xl flex flex-col min-h-0 overflow-hidden';
           col.style.boxShadow = 'var(--shadow-card)';
           col.dataset.status = '__sem-etapa__';
           col.innerHTML = `<div class="flex justify-between items-center px-4 pt-4 pb-3 border-b border-[var(--border-color)]">
@@ -1587,7 +1700,7 @@
             <span class="bg-amber-500/10 text-amber-500 text-[11px] font-bold px-2.5 py-0.5 rounded-full">${orphans.length}</span>
           </div>`;
           const cardsEl = document.createElement('div');
-          cardsEl.className = 'flex-1 p-2.5 min-h-[40px] overflow-y-auto space-y-2';
+          cardsEl.className = 'flex-1 p-2.5 min-h-0 overflow-y-auto space-y-2';
           for (const t of orphans) {
             const card = document.createElement('div');
             card.className = 'ticket-card relative overflow-hidden bg-[var(--surface-2)] border border-[var(--border-color)] rounded-[10px] p-3.5 cursor-pointer transition-all duration-200 hover:border-sky-500/40 hover:-translate-y-0.5';
@@ -2046,7 +2159,18 @@
         finally { btn.disabled = false; btn.textContent = 'Criar Ticket'; }
       }
 
-      return { open, close, toggleMaximize, toggleEditor, populateOptions, create };
+      function prefill(data) {
+        open();
+        setTimeout(() => {
+          if (data.title) document.getElementById('new-title').value = data.title;
+          if (data.priority) { const s = document.getElementById('new-priority'); for (const o of s.options) { if (o.value === data.priority) { s.value = data.priority; break; } } }
+          if (data.tier) { const s = document.getElementById('new-tier'); for (const o of s.options) { if (o.value === data.tier) { s.value = data.tier; break; } } }
+          if (data.client) { const s = document.getElementById('new-client'); for (const o of s.options) { if (o.value === data.client || o.textContent.trim() === data.client) { s.value = o.value; break; } } }
+          if (data.email) document.getElementById('new-email').value = data.email;
+        }, 100);
+      }
+
+      return { open, close, toggleMaximize, toggleEditor, populateOptions, create, prefill };
     })();
 
     // ════════════════════════════════════════════════════════════════
@@ -2364,6 +2488,8 @@
             </div>
           </div>
           <div class="flex items-center gap-1.5 flex-shrink-0">
+            <button onclick="ChatModule.createTicketFromChat()" class="inline-flex items-center gap-1 text-[10px] font-medium text-[var(--text-muted)] bg-[var(--glass)] border border-[var(--border-color)] px-2.5 py-1 rounded-full cursor-pointer hover:bg-sky-500/10 hover:text-sky-500 hover:border-sky-500/30 transition-all duration-150" title="Criar ticket com IA"><i data-lucide="sparkles" class="w-3 h-3"></i> Ticket IA</button>
+            <button onclick="ChatModule.createTicketManual()" class="inline-flex items-center gap-1 text-[10px] font-medium text-[var(--text-muted)] bg-[var(--glass)] border border-[var(--border-color)] px-2.5 py-1 rounded-full cursor-pointer hover:bg-emerald-500/10 hover:text-emerald-500 hover:border-emerald-500/30 transition-all duration-150" title="Criar ticket manual"><i data-lucide="plus" class="w-3 h-3"></i> Ticket</button>
             <span id="conv-ai-status" class="inline-flex items-center gap-1 text-[10px] font-semibold text-sky-400 bg-sky-500/10 px-2.5 py-1 rounded-full"><i data-lucide="bot" class="w-3 h-3"></i> IA ativa</span>
             <button id="conv-pause-toggle" onclick="ChatModule.togglePauseIA()" class="inline-flex items-center gap-1 text-[10px] font-medium text-[var(--text-muted)] bg-[var(--glass)] border border-[var(--border-color)] px-2.5 py-1 rounded-full cursor-pointer hover:bg-[var(--glass-hover)] hover:text-[var(--text-primary)] transition-all duration-150" title="Pausar IA nesta conversa"><i data-lucide="pause" class="w-3 h-3"></i> Pausar</button>
             <div class="flex items-center gap-1 text-[10px] text-[var(--text-muted)] opacity-50" title="Atualização automática">
@@ -3377,6 +3503,31 @@
         </a>`;
       }
 
+      async function createTicketFromChat() {
+        const phone = Store.state.selectedPhone;
+        if (!phone) return showToast('Selecione uma conversa primeiro', 'error');
+        const msgs = Store.state.chatMessages;
+        if (!msgs || msgs.length === 0) return showToast('Nenhuma mensagem carregada', 'error');
+        showToast('Analisando conversa com IA...');
+        const chatText = msgs.map(m => `[${m.direction === 'inbound' ? 'Cliente' : 'Atendente'}] ${m.message_text || ''}`).filter(l => l.length > 15).join('\n');
+        const conv = Store.state.conversations.find(c => c.phone === phone);
+        const clientName = conv ? conv.name : phone;
+        try {
+          const result = await ApiService.crmPost('ai_extract_ticket', { messages: chatText, clientName, phone });
+          if (result && result.title) {
+            CreateModule.prefill({ title: result.title, priority: result.priority || '', tier: result.tier || '', client: clientName, email: result.email || '' });
+            showToast('Dados extraidos pela IA — revise antes de criar');
+          } else { createTicketManual(); }
+        } catch (err) { console.error('[AI extract]', err); showToast('Erro na IA, abrindo modo manual', 'error'); createTicketManual(); }
+      }
+
+      function createTicketManual() {
+        const phone = Store.state.selectedPhone;
+        if (!phone) return showToast('Selecione uma conversa primeiro', 'error');
+        const conv = Store.state.conversations.find(c => c.phone === phone);
+        CreateModule.prefill({ title: '', client: conv ? conv.name : '' });
+      }
+
       return {
         startPolling, stopPolling, pollConversations, showBadge, hideBadge, subscribeRealtime, unsubscribeRealtime,
         loadList, renderList, filterList, setFilter, openConversation, getSelectedPhone,
@@ -3385,8 +3536,197 @@
         handleFileSelect, clearFile, toggleEmojiPicker, showEmojiCategory, insertEmoji,
         wrapSelection, openLightbox, closeLightbox, groupConversations, updateFilterCounts,
         toggleAudioPlay, cycleAudioSpeed, openVideoPlayer,
-        startRecording, stopRecording, cancelRecording
+        startRecording, stopRecording, cancelRecording,
+        createTicketFromChat, createTicketManual
       };
+    })();
+
+    // ════════════════════════════════════════════════════════════════
+    // ██  EMAIL MODULE  ██
+    // ════════════════════════════════════════════════════════════════
+    const EmailModule = (() => {
+      let emails = [];
+      let selectedThread = null;
+
+      async function loadEmails() {
+        try {
+          const result = await ApiService.crmGet('list_emails');
+          emails = result.emails || [];
+          render();
+        } catch (err) {
+          console.warn('[EmailModule] Backend not configured yet:', err.message);
+          emails = [];
+          render();
+        }
+      }
+
+      function getFiltered() {
+        const search = (document.getElementById('email-search')?.value || '').toLowerCase();
+        const status = document.getElementById('email-filter-status')?.value || '';
+        return emails.filter(e => {
+          if (search && !e.from.toLowerCase().includes(search) && !e.subject.toLowerCase().includes(search)) return false;
+          if (status && e.status !== status) return false;
+          return true;
+        });
+      }
+
+      function render() {
+        const tbody = document.getElementById('email-tbody');
+        if (!tbody) return;
+        const filtered = getFiltered();
+        const countEl = document.getElementById('count-email');
+        if (countEl) countEl.textContent = filtered.length;
+        if (!filtered.length) {
+          tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-[var(--text-muted)] text-[13px]">Nenhum email encontrado</td></tr>';
+          return;
+        }
+        const statusClass = s => ({ novo: 'bg-blue-500/10 text-blue-500', em_andamento: 'bg-amber-500/10 text-amber-500', respondido: 'bg-green-500/10 text-green-500', fechado: 'bg-gray-500/10 text-gray-400' }[s] || 'bg-blue-500/10 text-blue-500');
+        tbody.innerHTML = filtered.map((e, i) => `
+          <tr class="hover:bg-[var(--glass)] cursor-pointer transition-colors" style="animation:fadeIn .2s ease both;animation-delay:${i*20}ms" onclick="EmailModule.openDetail('${escapeHtml(e.threadId)}')">
+            <td class="px-4 py-3 border-b border-[var(--border-color)] text-[var(--text-primary)] font-medium max-w-[200px] truncate">${escapeHtml(e.from)}</td>
+            <td class="px-4 py-3 border-b border-[var(--border-color)] text-[var(--text-secondary)] max-w-[300px] truncate">${escapeHtml(e.subject)}</td>
+            <td class="px-4 py-3 border-b border-[var(--border-color)] text-[var(--text-muted)] text-[12px] whitespace-nowrap">${Helpers.formatDate(e.date)}</td>
+            <td class="px-4 py-3 border-b border-[var(--border-color)]"><span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold ${statusClass(e.status)}">${e.status || 'novo'}</span></td>
+            <td class="px-4 py-3 border-b border-[var(--border-color)]">
+              <button onclick="event.stopPropagation(); EmailModule.createTicketFromEmail('${escapeHtml(e.threadId)}')" class="text-[11px] text-sky-500 hover:underline font-medium">Criar Ticket</button>
+            </td>
+          </tr>
+        `).join('');
+      }
+
+      async function openDetail(threadId) {
+        selectedThread = threadId;
+        const panel = document.getElementById('email-detail');
+        const content = document.getElementById('email-thread-content');
+        panel.classList.remove('hidden');
+        panel.style.display = 'flex';
+        content.innerHTML = '<div class="flex items-center justify-center h-32"><div class="animate-spin w-5 h-5 border-2 border-[var(--border-color)] border-t-sky-500 rounded-full"></div></div>';
+        try {
+          const thread = await ApiService.crmPost('get_email_thread', { threadId });
+          content.innerHTML = (thread.messages || []).map(m => `
+            <div class="mb-4 p-4 bg-[var(--surface-2)] border border-[var(--border-color)] rounded-xl">
+              <div class="flex justify-between mb-2">
+                <span class="text-[13px] font-semibold text-[var(--text-primary)]">${escapeHtml(m.from)}</span>
+                <span class="text-[11px] text-[var(--text-muted)]">${Helpers.formatDate(m.date)}</span>
+              </div>
+              <div class="text-[13px] text-[var(--text-secondary)] leading-relaxed whitespace-pre-wrap">${escapeHtml(m.body || m.snippet || '')}</div>
+            </div>
+          `).join('') || '<div class="text-[var(--text-muted)] text-[13px] text-center py-8">Nenhuma mensagem na thread</div>';
+          refreshIcons();
+        } catch (err) { content.innerHTML = '<div class="text-red-400 text-[13px] text-center py-8">Erro ao carregar thread</div>'; }
+      }
+
+      function closeDetail() { document.getElementById('email-detail').classList.add('hidden'); document.getElementById('email-detail').style.display = ''; selectedThread = null; }
+
+      function createTicketFromEmail(threadId) {
+        const email = emails.find(e => e.threadId === (threadId || selectedThread));
+        if (!email) return;
+        CreateModule.prefill({ title: email.subject || '', email: email.from || '' });
+      }
+
+      async function refresh() { showToast('Atualizando emails...'); await loadEmails(); showToast('Emails atualizados'); }
+
+      return { loadEmails, render, openDetail, closeDetail, createTicketFromEmail, refresh, getFiltered };
+    })();
+
+    // ════════════════════════════════════════════════════════════════
+    // ██  NPS MODULE  ██
+    // ════════════════════════════════════════════════════════════════
+    const NpsModule = (() => {
+      let surveys = [];
+      let chart = null;
+
+      async function load() {
+        try {
+          const result = await ApiService.supabaseGet('nps_surveys?select=*&order=created_at.desc&limit=200');
+          surveys = Array.isArray(result) ? result : [];
+        } catch (err) {
+          console.warn('[NpsModule] Table may not exist yet:', err.message);
+          surveys = [];
+        }
+        renderKPIs();
+        renderTable();
+        renderChart();
+      }
+
+      function renderKPIs() {
+        const responded = surveys.filter(s => s.score !== null && s.score !== undefined);
+        const promoters = responded.filter(s => s.score >= 9).length;
+        const detractors = responded.filter(s => s.score <= 6).length;
+        const total = responded.length;
+        const nps = total > 0 ? Math.round(((promoters - detractors) / total) * 100) : 0;
+        document.getElementById('nps-score').textContent = total > 0 ? nps : '--';
+        document.getElementById('nps-label').textContent = total === 0 ? 'Sem dados' : nps >= 50 ? 'Excelente' : nps >= 0 ? 'Bom' : 'Precisa melhorar';
+        document.getElementById('nps-responses').textContent = total;
+        document.getElementById('nps-response-rate').textContent = surveys.length > 0 ? Math.round((total / surveys.length) * 100) + '% taxa de resposta' : '0%';
+        document.getElementById('nps-promoters').textContent = promoters;
+        document.getElementById('nps-detractors').textContent = detractors;
+      }
+
+      function renderChart() {
+        const ctx = document.getElementById('nps-chart');
+        if (!ctx) return;
+        if (chart) chart.destroy();
+        const now = new Date();
+        const labels = [], data = [];
+        for (let i = 29; i >= 0; i--) {
+          const d = new Date(now); d.setDate(d.getDate() - i);
+          const key = d.toISOString().slice(0, 10);
+          labels.push(d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }));
+          const dayR = surveys.filter(s => s.responded_at && s.responded_at.startsWith(key) && s.score != null);
+          if (!dayR.length) { data.push(null); continue; }
+          const p = dayR.filter(s => s.score >= 9).length, dt = dayR.filter(s => s.score <= 6).length;
+          data.push(Math.round(((p - dt) / dayR.length) * 100));
+        }
+        const isDark = document.documentElement.classList.contains('dark');
+        chart = new Chart(ctx, {
+          type: 'line',
+          data: { labels, datasets: [{ label: 'NPS', data, borderColor: '#0EA5E9', backgroundColor: 'rgba(14,165,233,0.1)', fill: true, tension: 0.4, pointRadius: 3, spanGaps: true }] },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: {
+            y: { min: -100, max: 100, grid: { color: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }, ticks: { color: isDark ? '#64748B' : '#818896' } },
+            x: { grid: { display: false }, ticks: { color: isDark ? '#64748B' : '#818896', maxRotation: 45 } }
+          }}
+        });
+      }
+
+      function renderTable() {
+        const tbody = document.getElementById('nps-tbody');
+        if (!tbody) return;
+        if (!surveys.length) {
+          tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-[var(--text-muted)] text-[13px]">Nenhuma pesquisa NPS registrada</td></tr>';
+          return;
+        }
+        tbody.innerHTML = surveys.map((s, i) => {
+          const scoreColor = s.score >= 9 ? 'text-green-500' : s.score >= 7 ? 'text-amber-500' : s.score != null ? 'text-red-500' : 'text-[var(--text-muted)]';
+          return `<tr class="hover:bg-[var(--glass)] transition-colors" style="animation:fadeIn .2s ease both;animation-delay:${i*20}ms">
+            <td class="px-4 py-3 border-b border-[var(--border-color)] text-[var(--text-primary)] font-medium">${escapeHtml(s.customer_name || '-')}</td>
+            <td class="px-4 py-3 border-b border-[var(--border-color)] text-[var(--text-muted)] font-mono text-[12px]">${s.phone || '-'}</td>
+            <td class="px-4 py-3 border-b border-[var(--border-color)] ${scoreColor} font-bold text-lg">${s.score != null ? s.score : '-'}</td>
+            <td class="px-4 py-3 border-b border-[var(--border-color)] text-[var(--text-secondary)] max-w-[300px] truncate">${escapeHtml(s.feedback || '-')}</td>
+            <td class="px-4 py-3 border-b border-[var(--border-color)] text-[var(--text-muted)] text-[12px]">${Helpers.formatDate(s.sent_at)}</td>
+            <td class="px-4 py-3 border-b border-[var(--border-color)]"><span class="text-[10px] px-2 py-0.5 rounded-full bg-[var(--glass)] text-[var(--text-muted)] border border-[var(--border-color)]">${s.trigger_type || 'manual'}</span></td>
+          </tr>`;
+        }).join('');
+      }
+
+      async function sendManual() {
+        const phone = document.getElementById('nps-phone').value.trim();
+        const name = document.getElementById('nps-name').value.trim();
+        const triggerType = document.getElementById('nps-trigger-type').value;
+        if (!phone) return showToast('Informe o telefone', 'error');
+        if (phone.length < 10) return showToast('Telefone invalido', 'error');
+        try {
+          const msg = `Ola${name ? ' ' + name : ''}! Gostaríamos de saber sua opiniao sobre nosso atendimento. Em uma escala de 0 a 10, quanto voce nos recomendaria? Responda com um numero de 0 a 10.`;
+          await ApiService.evolutionSendText(phone, msg);
+          await ApiService.supabasePost('nps_surveys', { phone, customer_name: name || null, trigger_type: triggerType, score: null, feedback: null });
+          showToast('NPS enviado para ' + phone);
+          document.getElementById('nps-phone').value = '';
+          document.getElementById('nps-name').value = '';
+          await load();
+        } catch (err) { showToast('Erro ao enviar NPS: ' + err.message, 'error'); }
+      }
+
+      return { load, renderKPIs, renderChart, renderTable, sendManual };
     })();
 
     // ════════════════════════════════════════════════════════════════
@@ -3437,6 +3777,14 @@
           ChatModule.hideBadge();
         }
 
+        if (view === 'email') {
+          EmailModule.loadEmails();
+        }
+
+        if (view === 'nps') {
+          NpsModule.load();
+        }
+
         if (view === 'reports') {
           const iframe = document.getElementById('reports-iframe');
           if (!iframe.src || !iframe.src.includes('reports.html')) {
@@ -3482,7 +3830,7 @@
         </div>`;
       try {
         await Promise.all([ApiService.loadOptions(), ApiService.loadTickets()]);
-        document.getElementById('view-kanban').innerHTML = '<div class="p-5 px-7 overflow-x-auto"><div class="flex gap-3 min-h-[calc(100vh-140px)]" id="kanban-board"></div></div>';
+        document.getElementById('view-kanban').innerHTML = '<div class="p-5 px-7 overflow-x-auto flex-1 flex flex-col min-h-0"><div class="flex gap-3 flex-1 min-h-0" id="kanban-board"></div></div>';
         ListModule.populateFilters();
         CreateModule.populateOptions();
         KanbanModule.render();
