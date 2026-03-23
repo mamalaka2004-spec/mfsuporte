@@ -118,6 +118,11 @@
       *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
     }
 
+    /* ══════════ View layout ══════════ */
+    .view { display: none; flex-direction: column; flex: 1 1 0%; min-height: 0; overflow: auto; }
+    .view.active { display: flex; }
+    #view-kanban { overflow: hidden; } /* kanban handles scroll internally per-column */
+
     /* ══════════ mf-chat Animations ══════════ */
     @keyframes fadeUp { from { opacity:0; transform:translateY(8px); filter:blur(4px); } to { opacity:1; transform:translateY(0); filter:blur(0); } }
     @keyframes slideLeft { from { opacity:0; transform:translateX(-6px); } to { opacity:1; transform:translateX(0); } }
@@ -416,14 +421,14 @@
     <div class="flex-1 overflow-hidden flex flex-col">
 
       <!-- ═══════ KANBAN VIEW ═══════ -->
-      <div class="view active flex flex-col flex-1" id="view-kanban">
+      <div class="view active" id="view-kanban">
         <div class="p-5 px-7 overflow-x-auto flex-1 flex flex-col min-h-0">
           <div class="flex gap-3 flex-1 min-h-0" id="kanban-board"></div>
         </div>
       </div>
 
       <!-- ═══════ LIST VIEW ═══════ -->
-      <div class="view hidden" id="view-list">
+      <div class="view" id="view-list">
         <div class="p-6 px-7">
           <div class="flex gap-2.5 mb-5 flex-wrap items-center">
             <input type="text" placeholder="Buscar tickets..." id="search-input" oninput="ListModule.render()"
@@ -452,7 +457,7 @@
       </div>
 
       <!-- ═══════ CONVERSATIONS VIEW ═══════ -->
-      <div class="view hidden" id="view-conversations">
+      <div class="view" id="view-conversations">
         <div class="flex flex-1 min-h-0 h-full">
           <!-- Sidebar: conversation list -->
           <div class="w-[340px] flex-shrink-0 border-r border-[var(--border-color)] flex flex-col bg-[var(--surface)]">
@@ -566,7 +571,7 @@
       </div>
 
       <!-- ═══════ EMAIL VIEW ═══════ -->
-      <div class="view hidden" id="view-email">
+      <div class="view" id="view-email">
         <div class="p-6 px-7">
           <div class="flex gap-2.5 mb-5 flex-wrap items-center justify-between">
             <div class="flex gap-2.5 items-center flex-wrap flex-1">
@@ -612,7 +617,7 @@
       </div>
 
       <!-- ═══════ NPS VIEW ═══════ -->
-      <div class="view hidden" id="view-nps">
+      <div class="view" id="view-nps">
         <div class="p-6 px-7">
           <!-- KPIs -->
           <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -673,12 +678,12 @@
       </div>
 
       <!-- ═══════ REPORTS VIEW ═══════ -->
-      <div class="view hidden" id="view-reports">
+      <div class="view" id="view-reports">
         <iframe class="reports-frame" id="reports-iframe"></iframe>
       </div>
 
       <!-- ═══════ CONFIG VIEW ═══════ -->
-      <div class="view hidden" id="view-config">
+      <div class="view" id="view-config">
         <div class="p-8 px-10 max-w-2xl">
           <h2 class="text-lg font-bold text-[var(--text-primary)] mb-6">Configuracoes</h2>
           <div class="bg-[var(--surface-2)] border border-[var(--border-color)] rounded-xl p-6">
@@ -3764,12 +3769,9 @@
         NavModule.set(view);
 
         // Show/hide views
-        document.querySelectorAll('.view').forEach(v => { v.classList.remove('active'); v.classList.add('hidden'); });
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         const target = document.getElementById(`view-${view}`);
-        if (target) {
-          target.classList.add('active');
-          target.classList.remove('hidden');
-        }
+        if (target) target.classList.add('active');
         Store.setState({ activeView: view });
 
         if (view === 'conversations') {
