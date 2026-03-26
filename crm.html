@@ -12,6 +12,20 @@
   <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
   <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <!-- Auth Gate: redirect to login if not authenticated -->
+  <script>
+    (async () => {
+      const _sb = window.supabase.createClient(
+        'https://xrsswlaipdczhocwmvbl.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhyc3N3bGFpcGRjemhvY3dtdmJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MjM1MjUsImV4cCI6MjA4ODI5OTUyNX0.sSVShzG4DZJj9oBRhBplmYHHATix7jgxCLmkov2C6XE'
+      );
+      const { data } = await _sb.auth.getSession();
+      if (!data.session) {
+        window.location.href = 'login.html';
+        throw new Error('NOT_AUTHENTICATED');
+      }
+    })();
+  </script>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manager Fashion — Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: #0f1117;
+      color: #e4e4e7;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .login-card {
+      background: #1a1d27;
+      border: 1px solid #2a2d3a;
+      border-radius: 16px;
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.4);
+    }
+    .logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .logo h1 {
+      font-size: 24px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #6366f1, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 4px;
+    }
+    .logo p {
+      font-size: 13px;
+      color: #9ca3af;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #9ca3af;
+      margin-bottom: 6px;
+    }
+    input {
+      width: 100%;
+      padding: 10px 14px;
+      background: #0f1117;
+      border: 1px solid #2a2d3a;
+      border-radius: 10px;
+      color: #e4e4e7;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus {
+      border-color: #6366f1;
+    }
+    input::placeholder {
+      color: #4b5563;
+    }
+    .btn-login {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn-login:hover { opacity: 0.9; }
+    .btn-login:active { transform: scale(0.98); }
+    .btn-login:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .error-msg {
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.2);
+      color: #fca5a5;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 24px 0;
+      color: #4b5563;
+      font-size: 12px;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #2a2d3a;
+    }
+    .btn-magic {
+      width: 100%;
+      padding: 10px;
+      background: transparent;
+      border: 1px solid #2a2d3a;
+      border-radius: 10px;
+      color: #9ca3af;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-magic:hover {
+      border-color: #6366f1;
+      color: #e4e4e7;
+    }
+    .success-msg {
+      background: rgba(34,197,94,0.1);
+      border: 1px solid rgba(34,197,94,0.2);
+      color: #86efac;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <div class="logo">
+      <h1>Manager Fashion</h1>
+      <p>CRM Suporte</p>
+    </div>
+
+    <div id="error-box" class="error-msg"></div>
+    <div id="success-box" class="success-msg"></div>
+
+    <!-- Email/Password form -->
+    <form id="login-form" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="seu@email.com" required autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label for="password">Senha</label>
+        <input type="password" id="password" placeholder="Sua senha" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn-login" id="btn-submit">Entrar</button>
+    </form>
+
+    <div class="divider">ou</div>
+
+    <button class="btn-magic" onclick="handleMagicLink()">Enviar link magico por email</button>
+  </div>
+
+  <script>
+    const SUPA_URL = 'https://xrsswlaipdczhocwmvbl.supabase.co';
+    const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhyc3N3bGFpcGRjemhvY3dtdmJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MjM1MjUsImV4cCI6MjA4ODI5OTUyNX0.sSVShzG4DZJj9oBRhBplmYHHATix7jgxCLmkov2C6XE';
+
+    const sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+
+    // If already logged in, redirect
+    sb.auth.getSession().then(({ data }) => {
+      if (data.session) window.location.href = 'crm.html';
+    });
+
+    function showError(msg) {
+      const el = document.getElementById('error-box');
+      el.textContent = msg;
+      el.style.display = 'block';
+      document.getElementById('success-box').style.display = 'none';
+    }
+
+    function showSuccess(msg) {
+      const el = document.getElementById('success-box');
+      el.textContent = msg;
+      el.style.display = 'block';
+      document.getElementById('error-box').style.display = 'none';
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-submit');
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Entrando...';
+      document.getElementById('error-box').style.display = 'none';
+
+      const { data, error } = await sb.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        showError(error.message === 'Invalid login credentials'
+          ? 'Email ou senha incorretos'
+          : error.message);
+        btn.disabled = false;
+        btn.textContent = 'Entrar';
+        return;
+      }
+
+      window.location.href = 'crm.html';
+    }
+
+    async function handleMagicLink() {
+      const email = document.getElementById('email').value.trim();
+      if (!email) {
+        showError('Digite seu email primeiro');
+        return;
+      }
+
+      const { error } = await sb.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: window.location.origin + '/crm.html' }
+      });
+
+      if (error) {
+        showError(error.message);
+        return;
+      }
+
+      showSuccess('Link enviado! Verifique seu email.');
+    }
+  </script>
+</body>
+</html>
